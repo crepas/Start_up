@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:start_up/home.dart';
 import 'dart:async';
 import 'login.dart';
 import 'home.dart';
