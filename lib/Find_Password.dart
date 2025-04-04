@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'login.dart';
 import 'TopAppbar.dart';
 
@@ -8,6 +10,92 @@ class FindPasswordScreen extends StatefulWidget {
 }
 
 class _FindPasswordScreenState extends State<FindPasswordScreen> {
+  final TextEditingController emailController = TextEditingController();
+  bool isLoading = false;
+
+  // 이메일 형식 검증 함수
+  bool isValidEmail(String email) {
+    final RegExp emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  // 사용자 입력 유효성 검사 함수
+  bool validateUserInput() {
+    final String email = emailController.text.trim();
+
+    // 빈칸 검사
+    if (email.isEmpty) {
+      _showErrorMessage('이메일을 입력해주세요.');
+      return false;
+    }
+
+    // 이메일 형식 검사
+    if (!isValidEmail(email)) {
+      _showErrorMessage('유효한 이메일 주소를 입력해주세요.');
+      return false;
+    }
+
+    return true;
+  }
+
+  // 에러 메시지 표시 함수
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // 비밀번호 재설정 이메일 전송 함수
+  Future<void> sendPasswordResetLink() async {
+    // 먼저 입력 유효성 검사 수행
+    if (!validateUserInput()) {
+      return;
+    }
+
+    // 로딩 상태 시작
+    setState(() {
+      isLoading = true;
+    });
+
+    final String email = emailController.text.trim();
+    final String apiUrl = 'http://your-backend-url.com/auth/forgot-password';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      // 로딩 상태 종료
+      setState(() {
+        isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseBody['message']),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        _showErrorMessage('이메일 전송 실패. 다시 시도해주세요.');
+      }
+    } catch (e) {
+      // 로딩 상태 종료
+      setState(() {
+        isLoading = false;
+      });
+      _showErrorMessage('네트워크 연결 오류. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -37,6 +125,8 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
             ),
             SizedBox(height: screenHeight * 0.05),
             TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
               style: TextStyle(fontSize: screenWidth * 0.03),
               decoration: InputDecoration(
                 prefixIcon: Padding(
@@ -78,10 +168,17 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                onPressed: () {
-                  // 비밀번호 재설정 이메일 전송 로직
-                },
-                child: Text(
+                onPressed: isLoading ? null : sendPasswordResetLink,
+                child: isLoading
+                    ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : Text(
                   '비밀번호 재설정 링크 전송',
                   style: TextStyle(
                     color: Colors.white,

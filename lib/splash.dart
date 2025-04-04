@@ -12,7 +12,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 2), () {  // 2초로 변경
+    Timer(Duration(seconds: 1), () {  // 1초로 변경
       // 로그인 상태 확인
       bool isLoggedIn = false;  // 여기에 실제 로그인 확인 로직 구현
       

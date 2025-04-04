@@ -294,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: screenHeight * 0.045),
+              SizedBox(height: screenHeight * 0.005),
 
               SizedBox(height: 5),
               Row(
@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.01),
+          SizedBox(height: screenHeight * 0.005),
 
               // 카카오 로그인 버튼
               Center(

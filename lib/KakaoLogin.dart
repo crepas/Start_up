@@ -22,7 +22,7 @@ class KakaoLoginButton extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(100), // 둥근 모서리 유지
           child: AspectRatio(
-            aspectRatio: 16 / 5, // 가로세로 비율 유지
+            aspectRatio: 28 / 5, // 가로세로 비율 유지
             child: Image.asset(
               'assets/Kakao_Login.png',
               fit: BoxFit.contain, // 비율 유지하며 조절
