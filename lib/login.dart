@@ -48,55 +48,56 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                TextField(
-                style: TextStyle(fontSize: screenWidth * 0.03),
-                decoration: InputDecoration(
-                  prefixIcon: Padding(
-                    padding: EdgeInsets.only(left: 20, right: 10), // 왼쪽 여백 추가
-                    child: SizedBox(
-                      width: 20, // 원하는 너비
-                      height: 20, // 원하는 높이
-                      child: Image.asset(
-                        'assets/Mail_Icon.png',
-                        fit: BoxFit.contain, // 이미지가 사이즈 안에서 맞게 조정됨
+                    TextField(
+                      style: TextStyle(fontSize: screenWidth * 0.03),
+                      decoration: InputDecoration(
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: screenWidth * 0.05, right: screenWidth * 0.02), // 여백도 가변적
+                          child: SizedBox(
+                            width: screenWidth * 0.045, // 화면 크기에 맞게 조정
+                            height: screenHeight * 0.045,
+                            child: Image.asset(
+                              'assets/Mail_Icon.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        hintText: '이메일',
+                        hintStyle: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          color: Color(0xFFA4A4A4),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: BorderSide(color: Colors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: BorderSide(color: Colors.grey),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: BorderSide(color: Color(0xFFA0CC71)),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: screenHeight * 0.015),
                       ),
                     ),
-                  ),
-                  hintText: '이메일',
-                  hintStyle: TextStyle(
-                    fontSize: screenWidth * 0.03,
-                    color: Color(0xFFA4A4A4),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(100),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(100),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(100),
-                    borderSide: BorderSide(color: Color(0xFFA0CC71)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                ),
-              ),
+
 
 
                     SizedBox(height: 20),
                     TextField(
-                      style: TextStyle(fontSize: screenWidth * 0.04),
+                      style: TextStyle(fontSize: screenWidth * 0.03),
                       obscureText: true,
                       decoration: InputDecoration(
                         prefixIcon: Padding(
-                          padding: EdgeInsets.only(left: 20, right: 10), // 왼쪽 여백 추가
+                          padding: EdgeInsets.only(left: screenWidth * 0.05, right: screenWidth * 0.02),
                           child: SizedBox(
-                            width: 20, // 아이콘 크기 동일
-                            height: 20,
+                            width: screenWidth * 0.045, // 화면 크기에 맞게 조정
+                            height: screenHeight * 0.045,
                             child: Image.asset(
                               'assets/Lock_Icon.png',
-                              fit: BoxFit.contain, // 아이콘이 크기에 맞게 조정됨
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -117,13 +118,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(100),
                           borderSide: BorderSide(color: Color(0xFFA0CC71)),
                         ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: screenHeight * 0.015),
                       ),
                     ),
 
-                    SizedBox(height: 20),
 
                     // 추가 링크: 비밀번호 찾기, 회원가입
+                    SizedBox(height: screenHeight * 0.03), // 추가
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -161,27 +162,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
                     SizedBox(
-                      width: double.infinity,
-                      height: screenHeight * 0.05,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFA0CC71),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(100),
+                      width: screenWidth * 0.8, // 너비 비율 조정 가능
+                      child: AspectRatio(
+                        aspectRatio: 8.7 / 1, // 버튼의 가로세로 비율 (적절히 조절 가능)
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFA0CC71),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
                           ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => HomeScreen()),
-                          );
-                        },
-                        child: Text(
-                          '로그인',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.03,
-                            fontWeight: FontWeight.w500,
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => HomeScreen()),
+                            );
+                          },
+                          child: Text(
+                            '로그인',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.03,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
@@ -189,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01),
+              SizedBox(height: screenHeight * 0.045),
 
 
 
