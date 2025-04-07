@@ -72,6 +72,9 @@ flutter:
     - assets/kakao_Login.png
     - assets/AD.png
     - assets/restaurant.png
+    - assets/samgyupsal.png
+    - assets/myung_jin.png
+    - assets/onki.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

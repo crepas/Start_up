@@ -4,11 +4,13 @@ import 'login.dart';   // 경로 수정
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';  // 수정
 import 'KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
 import 'ADListView.dart';
+import 'MainScreen.dart'; // 메인 화면 파일 추가
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();  // 추가
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
   // runApp(MyApp());
-  runApp(RestaurantCard()); // runapp() 에 실행 기킬 화면 넣으면 됨
+  runApp(MyApp()); // runapp() 에 실행 시킬 화면 넣으면 됨
 }
 
 class MyApp extends StatelessWidget {
@@ -21,7 +23,12 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SplashScreen(),  // 스플래시 스크린을 시작 화면으로 설정
+      home: MainScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      routes: {
+        '/splash': (context) => SplashScreen(),
+        '/login': (context) => LoginScreen(),
+        '/main': (context) => MainScreen(),
+      },
     );
   }
 }
