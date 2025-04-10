@@ -6,6 +6,7 @@ import 'KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'Find_Password.dart';
 import 'Signup.dart';
+import '../utils/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -41,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 백엔드 API URL (실제 URL로 변경 필요)
-      final url = Uri.parse('https://your-backend-api.com/login');
+      final url = Uri.parse('${getServerUrl()}/login');
 
       // 요청 데이터 준비
       final requestData = {
@@ -53,7 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestData),
+        body: jsonEncode({
+          'usernameOrEmail': _emailController.text,
+          'password': _passwordController.text
+        }),
       );
 
       // 응답 처리
@@ -336,6 +340,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         context,
                         MaterialPageRoute(builder: (context) => HomeScreen()),
                       );
+
+                      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+
+                      // 서버에 카카오 로그인 정보 전송 추가
+                      final url = Uri.parse('http://10.0.2.2:8081/auth/kakao');
+                      final response = await http.post(
+                        url,
+                        headers: {'Content-Type': 'application/json'},
+                        body: jsonEncode({
+                          'accessToken': token.accessToken
+                        }),
+                      );
+
+                      if (response.statusCode == 200) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
+                        );
+                      }
                     } catch (error) {
                       print('카카오 로그인 실패 $error');
                     }

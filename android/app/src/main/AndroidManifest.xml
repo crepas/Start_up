@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:name="나루나루"
+
         android:label="나루나루"
         android:icon="@mipmap/ic_launcher">
         <activity

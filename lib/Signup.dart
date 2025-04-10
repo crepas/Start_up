@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'login.dart';
 import 'TopAppbar.dart';
+import '../utils/api_config.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -120,7 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       // 백엔드 API URL (실제 URL로 변경 필요)
-      final url = Uri.parse('https://your-backend-api.com/signup');
+      final url = Uri.parse('${getServerUrl()}/signup');
 
       // 요청 데이터 준비
       final requestData = {
@@ -133,7 +134,11 @@ class _SignupScreenState extends State<SignupScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestData),
+        body: jsonEncode({
+          'username': _nameController.text,
+          'email': _emailController.text,
+          'password': _passwordController.text
+        }),
       );
 
       // 응답 처리
@@ -173,6 +178,7 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     } catch (e) {
       // 네트워크 오류 등의 예외 처리
+      print('회원가입 오류 상세: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('서버 연결에 실패했습니다. 다시 시도해주세요.'),
