@@ -31,12 +31,9 @@ dependencies:
   http: ^1.1.0
   flutter:
     sdk: flutter
-  shared_preferences: ^2.0.15  # 자동 로그인 상태 저장용
-  provider: ^6.0.3  # 상태 관리용
   kakao_flutter_sdk_user: ^1.9.5
   kakao_flutter_sdk_common: ^1.9.5
   kakao_flutter_sdk_share: ^1.9.5
-
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -73,11 +70,6 @@ flutter:
     - assets/title.png
     - assets/User_Icon.png
     - assets/kakao_Login.png
-    - assets/AD.png
-    - assets/restaurant.png
-    - assets/samgyupsal.png
-    - assets/myung_jin.png
-    - assets/onki.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

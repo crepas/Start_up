@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'login.dart';
-import '../widgets/TopAppbar.dart';
-import '../services/api_config.dart';
+import 'TopAppbar.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -121,7 +120,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       // 백엔드 API URL (실제 URL로 변경 필요)
-      final url = Uri.parse('${getServerUrl()}/signup');
+      final url = Uri.parse('https://your-backend-api.com/signup');
 
       // 요청 데이터 준비
       final requestData = {

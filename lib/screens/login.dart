@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:convert'; // JSON 처리를 위한 import
 import 'package:http/http.dart' as http; // HTTP 요청을 위한 패키지 추가 필요
-import 'MainScreen.dart';
-import '../widgets/KakaoLogin.dart';
+import 'home.dart';
+import 'KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'Find_Password.dart';
 import 'Signup.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -24,31 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 에러 메시지 관리
   String _errorMessage = '';
-
-  @override
-  void initState() {
-    super.initState();
-    // 자동 로그인 체크
-    _checkAutoLogin();
-  }
-
-  // 자동 로그인 체크 함수
-  Future<void> _checkAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
-    final String? email = prefs.getString('email');
-
-    if (token != null && email != null) {
-      // 자동 로그인 처리 - 토큰이 유효한지 백엔드에서 확인하는 로직을 추가할 수 있음
-      print('자동 로그인: $email');
-
-      // 메인 화면으로 이동
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainScreen()),
-      );
-    }
-  }
 
   // 로그인 함수 추가
   Future<void> _login() async {
@@ -67,12 +40,12 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 백엔드 API URL (실제 백엔드 URL로 변경 필요)
-      final url = Uri.parse('${getServerUrl()}/login');
+      // 백엔드 API URL (실제 URL로 변경 필요)
+      final url = Uri.parse('https://your-backend-api.com/login');
 
       // 요청 데이터 준비
       final requestData = {
-        'usernameOrEmail': _emailController.text,
+        'email': _emailController.text,
         'password': _passwordController.text
       };
 
@@ -84,22 +57,23 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       // 응답 처리
-      final responseData = jsonDecode(response.body);
-
       if (response.statusCode == 200) {
-        // 로그인 성공 - 사용자 정보 저장
-        final prefs = await SharedPreferences.getInstance();
-        prefs.setString('token', 'sample_token'); // 실제 토큰으로 대체 필요
-        prefs.setString('email', _emailController.text);
-        prefs.setString('username', responseData['user']['username']);
+        // 로그인 성공
+        final responseData = jsonDecode(response.body);
+
+        // 토큰이나 사용자 정보를 저장할 수 있음
+        // 예: SharedPreferences를 사용하여 로컬에 저장
+        // final prefs = await SharedPreferences.getInstance();
+        // prefs.setString('token', responseData['token']);
 
         // 홈 화면으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
         // 로그인 실패
+        final responseData = jsonDecode(response.body);
         setState(() {
           _errorMessage = responseData['message'] ?? '로그인에 실패했습니다.';
         });
@@ -110,69 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = '서버 연결에 실패했습니다. 다시 시도해주세요.';
       });
       print('로그인 오류: $e');
-    } finally {
-      // 로딩 종료
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // 카카오 로그인 함수
-  Future<void> _kakaoLogin() async {
-    try {
-      // 로딩 시작
-      setState(() {
-        _isLoading = true;
-        _errorMessage = '';
-      });
-
-      // 카카오 SDK로 로그인
-      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
-      print('카카오 로그인 성공: ${token.accessToken}');
-
-      try {
-        // 백엔드에 카카오 토큰 전송
-        final url = Uri.parse('http://10.0.2.2:8081/auth/kakao');
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'accessToken': token.accessToken}),
-        );
-
-        if (response.statusCode == 200) {
-          // 유저 정보 저장
-          final prefs = await SharedPreferences.getInstance();
-          prefs.setString('token', 'kakao_auth_token'); // 백엔드에서 제공하는 토큰으로 대체
-
-          // 사용자 정보 가져오기 - 카카오로부터
-          User user = await UserApi.instance.me();
-          prefs.setString('email', user.kakaoAccount?.email ?? 'kakao_user@naru.app');
-          prefs.setString('username', user.kakaoAccount?.profile?.nickname ?? 'kakao_user');
-
-          // 홈 화면으로 이동
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MainScreen()),
-          );
-        } else {
-          // 백엔드 연동 실패
-          final responseData = jsonDecode(response.body);
-          setState(() {
-            _errorMessage = responseData['message'] ?? '카카오 로그인 처리 중 오류가 발생했습니다.';
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _errorMessage = '서버 연결에 실패했습니다. 다시 시도해주세요.';
-        });
-        print('카카오 로그인 백엔드 연동 오류: $e');
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = '카카오 로그인에 실패했습니다.';
-      });
-      print('카카오 로그인 실패: $e');
     } finally {
       // 로딩 종료
       setState(() {
@@ -412,12 +323,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.005),
+          SizedBox(height: screenHeight * 0.005),
 
               // 카카오 로그인 버튼
               Center(
                 child: KakaoLoginButton(
-                  onPressed: _kakaoLogin, // 수정된 카카오 로그인 함수 연결
+                  onPressed: () async {
+                    try {
+                      await UserApi.instance.loginWithKakaoAccount();
+                      // 로그인 성공 시 홈 화면으로 이동
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    } catch (error) {
+                      print('카카오 로그인 실패 $error');
+                    }
+                  },
                 ),
               ),
             ],
