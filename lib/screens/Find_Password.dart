@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'login.dart';
-import 'TopAppbar.dart';
+import '../widgets/TopAppbar.dart';
 
 class FindPasswordScreen extends StatefulWidget {
   @override
@@ -12,6 +13,17 @@ class FindPasswordScreen extends StatefulWidget {
 class _FindPasswordScreenState extends State<FindPasswordScreen> {
   final TextEditingController emailController = TextEditingController();
   bool isLoading = false;
+
+  // 서버 URL 가져오기
+  String getBaseUrl() {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8081'; // 안드로이드 에뮬레이터
+    } else if (Platform.isIOS) {
+      return 'http://localhost:8081'; // iOS 시뮬레이터
+    } else {
+      return 'http://localhost:8081'; // Windows/Mac/Linux
+    }
+  }
 
   // 이메일 형식 검증 함수
   bool isValidEmail(String email) {
@@ -40,6 +52,8 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
 
   // 에러 메시지 표시 함수
   void _showErrorMessage(String message) {
+    if (!mounted) return; // 위젯이 마운트되어 있는지 확인
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -57,12 +71,14 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
     }
 
     // 로딩 상태 시작
-    setState(() {
-      isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     final String email = emailController.text.trim();
-    final String apiUrl = 'http://your-backend-url.com/auth/forgot-password';
+    final String apiUrl = '${getBaseUrl()}/auth/forgot-password';
 
     try {
       final response = await http.post(
@@ -71,29 +87,45 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
         body: jsonEncode({'email': email}),
       );
 
-      // 로딩 상태 종료
-      setState(() {
-        isLoading = false;
-      });
+      // 로딩 상태 종료 - mounted 확인
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      } else {
+        return; // 위젯이 이미 dispose 되었으면 함수 종료
+      }
 
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(responseBody['message']),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (mounted) { // ScaffoldMessenger 사용 전 mounted 확인
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseBody['message'] ?? '비밀번호 재설정 링크가 이메일로 전송되었습니다.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       } else {
         _showErrorMessage('이메일 전송 실패. 다시 시도해주세요.');
       }
     } catch (e) {
-      // 로딩 상태 종료
-      setState(() {
-        isLoading = false;
-      });
-      _showErrorMessage('네트워크 연결 오류. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+      print('비밀번호 재설정 오류: $e');
+
+      // 로딩 상태 종료 - mounted 확인
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        _showErrorMessage('네트워크 연결 오류. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
   }
 
   @override
