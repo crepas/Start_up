@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'BottomNavBar.dart';
 class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -180,28 +180,14 @@ class _MainScreenState extends State<MainScreen> {
       ),
 
       // 하단 네비게이션 바
-      bottomNavigationBar: BottomNavigationBar(
+      // 기존 bottomNavigationBar 부분을 아래와 같이 변경
+      bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: '지도',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu),
-            label: '메뉴',
-          ),
-        ],
-        selectedItemColor: Colors.green, // 선택된 아이템 색상
       ),
     );
   }
