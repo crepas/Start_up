@@ -75,6 +75,13 @@ flutter:
     - assets/samgyupsal.png
     - assets/myung_jin.png
     - assets/onki.png
+    - assets/Heart_G.png
+    - assets/Heart_P.png
+    - assets/banner.png
+    - assets/Icon_heart.png
+    - assets/Icon_map.png
+    - assets/Icon_review.png
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
