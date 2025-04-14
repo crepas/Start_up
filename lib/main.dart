@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: ReviewList(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      home: ListScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

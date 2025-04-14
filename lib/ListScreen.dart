@@ -3,6 +3,9 @@ import 'BottomNavBar.dart';
 import 'ListView_AD.dart';
 import 'ListView_RT.dart';
 import 'Filter.dart';
+import 'Rt_image.dart';
+import 'Rt_information.dart';
+import 'Rt_ReviewList.dart';
 
 class ListScreen extends StatefulWidget {
   @override
@@ -11,6 +14,18 @@ class ListScreen extends StatefulWidget {
 
 class _ListScreenState extends State<ListScreen> {
   int _currentIndex = 0;
+  int? _expandedIndex; // 현재 확장된 항목의 인덱스를 저장
+
+  void toggleExpanded(int index) {
+    setState(() {
+      // 같은 항목을 다시 탭하면 닫기
+      if (_expandedIndex == index) {
+        _expandedIndex = null;
+      } else {
+        _expandedIndex = index;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +34,6 @@ class _ListScreenState extends State<ListScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white, // 전체 화면 배경색 흰색으로 설정
-      // appBar: AppBar(
-      //   title: Text('식당 리스트'),
-      // ),
       body: Column(
         children: [
           // 배너
@@ -48,9 +60,41 @@ class _ListScreenState extends State<ListScreen> {
               itemCount: 30,
               itemBuilder: (context, index) {
                 if (index % 6 == 0) {
+                  // 광고 항목은 확장 기능 없음
                   return ListView_AD();
                 } else {
-                  return ListView_RT();
+                  // 식당 항목 (확장 가능)
+                  return Column(
+                    children: [
+                      ListView_RT(
+                        isExpanded: _expandedIndex == index,
+                        onTap: () => toggleExpanded(index),
+                      ),
+
+                      // 확장된 상태일 때만 상세 정보 표시
+                      if (_expandedIndex == index)
+                        AnimatedContainer(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          color: Colors.white,
+                          child: Column(
+                            children: [
+                              // 식당 이미지 슬라이더
+                              RtImage(),
+
+                              // 식당 정보
+                              Rt_information(),
+
+                              // 리뷰 목록
+                              Container(
+                                height: 500, // 리뷰 목록의 높이 (필요에 따라 조정)
+                                child: ReviewList(),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
                 }
               },
             ),
