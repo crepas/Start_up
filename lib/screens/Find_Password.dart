@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'login.dart';
-import 'TopAppbar.dart';
+import '../widgets/TopAppbar.dart';
 
 class FindPasswordScreen extends StatefulWidget {
   @override
@@ -62,7 +62,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
     });
 
     final String email = emailController.text.trim();
-    final String apiUrl = 'http://your-backend-url.com/auth/forgot-password';
+    final String apiUrl = 'http://10.0.2.2:8081/auth/forgot-password';
 
     try {
       final response = await http.post(
