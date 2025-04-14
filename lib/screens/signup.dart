@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'login.dart';
-import '../widgets/TopAppbar.dart';
-import '../services/api_config.dart';
+import 'TopAppbar.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -121,15 +120,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       // 백엔드 API URL (실제 URL로 변경 필요)
-      final url = Uri.parse('${getServerUrl()}/signup');
+      final url = Uri.parse('https://your-backend-api.com/signup');
 
       // 요청 데이터 준비
       final requestData = {
-        'username': _nameController.text.trim(), // 'name'에서 'username'으로 변경
+        'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
-        'foodTypes': [], // 빈 배열 추가
-        'priceRange': '중간' // 기본값 추가
       };
 
       // POST 요청 보내기
@@ -161,12 +158,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
         // 에러 메시지에 따라 처리 (이메일 중복 등)
         if (errorMessage.contains('email') || errorMessage.toLowerCase().contains('duplicate')) {
-          if(mounted){
-            setState(() {
-              _isLoading = true;
-              _emailError = '이미 사용 중인 이메일입니다';
-            });
-          }
+          setState(() {
+            _emailError = '이미 사용 중인 이메일입니다';
+          });
         } else {
           // 일반 에러 메시지 표시
           ScaffoldMessenger.of(context).showSnackBar(

@@ -39,8 +39,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_kakao_login: ^3.4.1
-  flutter_naver_map: ^1.3.1
-  geolocator: ^13.0.4
 
 dev_dependencies:
   flutter_test:
@@ -72,8 +70,11 @@ flutter:
     - assets/title.png
     - assets/User_Icon.png
     - assets/kakao_Login.png
-    - assets/restraunt_marker.png
-    - assets/default_marker.png
+    - assets/AD.png
+    - assets/restaurant.png
+    - assets/samgyupsal.png
+    - assets/myung_jin.png
+    - assets/onki.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
