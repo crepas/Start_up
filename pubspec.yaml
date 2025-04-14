@@ -81,6 +81,9 @@ flutter:
     - assets/Icon_heart.png
     - assets/Icon_map.png
     - assets/Icon_review.png
+    - assets/food1.png
+    - assets/food2.png
+    - assets/food3.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

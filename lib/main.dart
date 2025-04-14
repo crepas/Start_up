@@ -7,6 +7,10 @@ import 'KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
 import 'ListView_AD.dart';
 import 'MainScreen.dart'; // 메인 화면 파일 추가
 import 'ListScreen.dart';
+import 'Rt_information.dart';
+import 'Rt_image.dart';
+import 'Rt_ReviewList.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();  // 추가
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
@@ -24,7 +28,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: ListScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      home: ReviewList(),  // 로그인 화면 대신 메인 화면으로 바로 이동
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
