@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'BottomNavBar.dart';
-import 'ListView_AD.dart';
-import 'ListView_RT.dart';
-import 'Filter.dart';
-import 'Rt_image.dart';
-import 'Rt_information.dart';
-import 'Rt_ReviewList.dart';
-import 'models/restaurant.dart';
+import '../widgets/BottomNavBar.dart';
+import '../widgets/ListView_AD.dart';
+import '../widgets/ListView_RT.dart';
+import '../widgets/Filter.dart';
+import '../widgets/Rt_image.dart';
+import '../widgets/Rt_information.dart';
+import '../widgets/Rt_ReviewList.dart';
+import '../models/restaurant.dart';
 
 class ListScreen extends StatefulWidget {
   @override

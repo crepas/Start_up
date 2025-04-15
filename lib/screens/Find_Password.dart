@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'login.dart';
-import 'TopAppbar.dart';
+import '../widgets/login.dart';
+import '../widgets/TopAppbar.dart';
 
 class FindPasswordScreen extends StatefulWidget {
   @override

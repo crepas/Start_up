@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'ListView_RT.dart';
-import 'splash.dart';  // 경로 수정
-import 'login.dart';   // 경로 수정
+import 'widgets/ListView_RT.dart';
+import '../screens/splash.dart';  // 경로 수정
+import 'widgets/login.dart';   // 경로 수정
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';  // 수정
-import 'KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
-import 'ListView_AD.dart';
-import 'MainScreen.dart'; // 메인 화면 파일 추가
-import 'ListScreen.dart';
-import 'Rt_information.dart';
-import 'Rt_image.dart';
-import 'Rt_ReviewList.dart';
+import 'widgets/KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
+import '../widgets/ListView_AD.dart';
+import 'screens/MainScreen.dart'; // 메인 화면 파일 추가
+import 'screens/ListScreen.dart';
+import '../widgets/Rt_information.dart';
+import 'widgets/Rt_image.dart';
+import '../widgets/Rt_ReviewList.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();  // 추가

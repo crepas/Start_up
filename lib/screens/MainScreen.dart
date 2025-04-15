@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'BottomNavBar.dart';
+import '../widgets/BottomNavBar.dart';
 class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
