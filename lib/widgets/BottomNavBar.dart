@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:start_up/screens/MainScreen.dart';
+import 'package:start_up/screens/HomeTab.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -19,7 +19,7 @@ class BottomNavBar extends StatelessWidget {
         if (index == 0) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MainScreen()),
+            MaterialPageRoute(builder: (context) => HomeTab()),
           );
         } else {
           onTap(index);

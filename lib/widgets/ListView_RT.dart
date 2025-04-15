@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'models/restaurant.dart';
+import '../models/restaurant.dart';
 import 'package:flutter/services.dart';
 
 class ListViewRt extends StatefulWidget {

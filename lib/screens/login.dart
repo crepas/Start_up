@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'MainScreen.dart';
+import 'dart:convert'; // JSON 처리를 위한 import
+import 'package:http/http.dart' as http; // HTTP 요청을 위한 패키지 추가 필요
+import '../screens/HomeTab.dart';
 import '../widgets/KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import 'Find_Password.dart';
-import 'Signup.dart';
+import '../screens/Find_Password.dart';
+import '../screens/Signup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../utils/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
+          MaterialPageRoute(builder: (context) => HomeTab()),
         );
       } else {
         final responseData = jsonDecode(response.body);
@@ -389,7 +390,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // 홈 화면으로 이동
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => MainScreen()),
+                        MaterialPageRoute(builder: (context) => HomeTab()),
                       );
                     } catch (error) {
                       print('카카오 로그인 실패 $error');

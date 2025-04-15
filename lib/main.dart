@@ -1,12 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:start_up/screens/HomeTab.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'widgets/KakaoLogin.dart';
-import 'widgets/ADListView.dart';
-import 'screens/MainScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 로그인 상태 체크를 위한 클래스
@@ -46,7 +44,7 @@ class _AuthCheckState extends State<AuthCheck> {
     if (_isLoading) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     } else {
-      return _isLoggedIn ? MainScreen() : LoginScreen();
+      return _isLoggedIn ? HomeTab() : LoginScreen();
     }
   }
 }
@@ -67,6 +65,7 @@ void main() async {
   }
 
   runApp(MyApp());
+  //runApp(ListView_RT()); // runapp() 에 실행 시킬 화면 넣으면 됨
 }
 
 class MyApp extends StatelessWidget {
@@ -84,11 +83,11 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: AuthCheck(), // 로그인 체크 화면으로 시작
+      home: HomeTab(),  // 로그인 화면 대신 메인 화면으로 바로 이동
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
-        '/main': (context) => MainScreen(),
+        '/main': (context) => HomeTab(),
       },
     );
   }
