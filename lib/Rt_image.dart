@@ -32,13 +32,13 @@ class _RtImageState extends State<RtImage> {
         height: imageSize, // 슬라이더와 이미지를 포함하는 박스의 세로 크기
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15), // 둥근 모서리
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.2), // 그림자 색상
-          //     blurRadius: 10, // 그림자 흐림 정도
-          //     offset: Offset(0, 4), // 그림자의 위치
-          //   ),
-          // ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2), // 그림자 색상
+              blurRadius: 10, // 그림자 흐림 정도
+              offset: Offset(0, 0.5), // 그림자의 위치
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -88,6 +88,7 @@ class _RtImageState extends State<RtImage> {
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.5), // 배경색 반투명 처리
           borderRadius: BorderRadius.circular(imageSize * 0.038), // 둥근 모서리
+
         ),
         child: Text(
           '${currentPage + 1}/${imageUrls.length}', // "현재 페이지/총 이미지 개수"
