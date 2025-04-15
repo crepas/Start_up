@@ -86,10 +86,9 @@ class _ListScreenState extends State<ListScreen> {
                               Rt_information(),
 
                               // 리뷰 목록
-                              Container(
-                                height: 500, // 리뷰 목록의 높이 (필요에 따라 조정)
-                                child: ReviewList(),
-                              ),
+
+                              ReviewList(),
+
                             ],
                           ),
                         ),
