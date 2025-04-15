@@ -1,16 +1,72 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'screens/splash.dart';  // 경로 수정
-import 'screens/login.dart';   // 경로 수정
-import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';  // 수정
-import 'widgets/KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
+import 'screens/splash.dart';
+import 'screens/login.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'widgets/KakaoLogin.dart';
 import 'widgets/ADListView.dart';
-import 'MainScreen.dart'; // 메인 화면 파일 추가
+import 'screens/MainScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();  // 추가
+// 로그인 상태 체크를 위한 클래스
+class AuthCheck extends StatefulWidget {
+  @override
+  _AuthCheckState createState() => _AuthCheckState();
+}
+
+class _AuthCheckState extends State<AuthCheck> {
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  // 로그인 상태 확인
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token != null) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else {
+      return _isLoggedIn ? MainScreen() : LoginScreen();
+    }
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
-  // runApp(MyApp());
-  runApp(MyApp()); // runapp() 에 실행 시킬 화면 넣으면 됨
+
+  if (!kIsWeb) {
+    try {
+      await NaverMapSdk.instance.initialize(
+        clientId: '네이버 맵 클라이언트 ID',
+        onAuthFailed: (e) => print("네이버 맵 인증 오류: $e"),
+      );
+    } catch (e) {
+      print("네이버 맵 초기화 오류: $e");
+    }
+  }
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -18,12 +74,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '나루나루',
-      debugShowCheckedModeBanner: false,  // 디버그 배너 제거
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        primaryColor: Color(0xFFA0CC71),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: Color(0xFFA0CC71),
+          secondary: Color(0xFFD2E6A9),
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MainScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      home: AuthCheck(), // 로그인 체크 화면으로 시작
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

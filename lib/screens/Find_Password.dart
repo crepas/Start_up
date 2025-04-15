@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'login.dart';
 import '../widgets/TopAppbar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class FindPasswordScreen extends StatefulWidget {
   @override
@@ -50,6 +52,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
   }
 
   // 비밀번호 재설정 이메일 전송 함수
+  // 비밀번호 재설정 이메일 전송 함수
   Future<void> sendPasswordResetLink() async {
     // 먼저 입력 유효성 검사 수행
     if (!validateUserInput()) {
@@ -62,7 +65,13 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
     });
 
     final String email = emailController.text.trim();
-    final String apiUrl = 'http://10.0.2.2:8081/auth/forgot-password';
+    // 환경에 따라 URL 동적 설정
+    final String baseUrl = kIsWeb
+        ? 'http://localhost:8081'
+        : Platform.isAndroid
+        ? 'http://10.0.2.2:8081'
+        : 'http://localhost:8081';
+    final String apiUrl = '$baseUrl/auth/forgot-password';
 
     try {
       final response = await http.post(
@@ -76,16 +85,29 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
         isLoading = false;
       });
 
+      final responseData = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
+        // 성공 메시지 표시
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(responseBody['message']),
+            content: Text(responseData['message']),
+            backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
           ),
         );
+
+        // 이메일 전송 성공 후 로그인 화면으로 잠시 후 이동
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+          );
+        });
       } else {
-        _showErrorMessage('이메일 전송 실패. 다시 시도해주세요.');
+        // 오류 메시지 표시
+        _showErrorMessage(responseData['message'] ?? '이메일 전송 실패. 다시 시도해주세요.');
       }
     } catch (e) {
       // 로딩 상태 종료
@@ -93,6 +115,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
         isLoading = false;
       });
       _showErrorMessage('네트워크 연결 오류. 인터넷 연결을 확인한 후 다시 시도해주세요.');
+      print('비밀번호 찾기 오류: $e');
     }
   }
 

@@ -11,22 +11,31 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // 각 탭에 해당하는 화면 위젯들
-  final List<Widget> _tabs = [
-    HomeTab(),
-    MapTab(),
-    MenuTab(),
-  ];
+  // 상태가 변경될 때마다 위젯 다시 생성 - 중요!
+  Widget _getBodyWidget() {
+    switch (_currentIndex) {
+      case 0:
+        return HomeTab();
+      case 1:
+        return MapTab();
+      case 2:
+        return MenuTab();
+      default:
+        return HomeTab();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _tabs[_currentIndex], // 현재 선택된 탭 화면 표시
+      // 바디에 동적으로 생성된 위젯 할당
+      body: _getBodyWidget(),
 
       // 하단 네비게이션 바
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          print("탭 인덱스 변경: $_currentIndex -> $index"); // 디버깅용
           setState(() {
             _currentIndex = index;
           });
@@ -45,7 +54,7 @@ class _MainScreenState extends State<MainScreen> {
             label: '메뉴',
           ),
         ],
-        selectedItemColor: Color(0xFFA0CC71), // 선택된 아이템 색상
+        selectedItemColor: Color(0xFFA0CC71),
       ),
     );
   }
