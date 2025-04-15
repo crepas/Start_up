@@ -7,7 +7,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  final List<String> _categories = ['맛집', '카페', '???', '', ''];
+  final List<String> _categories = ['카테고리', '거리', '가격', '평점', '리뷰'];
 
   // 음식 데이터 모델 (나중에 API 연결 시 대체될 예정)
   final List<Map<String, dynamic>> _foodItems = [

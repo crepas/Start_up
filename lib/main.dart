@@ -8,7 +8,7 @@ import '../widgets/ListView_AD.dart';
 import 'screens/MainScreen.dart'; // 메인 화면 파일 추가
 import 'screens/ListScreen.dart';
 import '../widgets/Rt_information.dart';
-import 'widgets/Rt_image.dart';
+import '../widgets/Rt_image.dart';
 import '../widgets/Rt_ReviewList.dart';
 
 void main() {
