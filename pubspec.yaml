@@ -39,7 +39,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  #flutter_kakao_login: ^3.4.1
+  flutter_kakao_login: ^3.4.1
   geolocator: ^13.0.4
   shared_preferences: ^2.5.3
 
@@ -78,6 +78,18 @@ flutter:
     - assets/samgyupsal.png
     - assets/myung_jin.png
     - assets/onki.png
+    - assets/Heart_G.png
+    - assets/Heart_P.png
+    - assets/banner.png
+    - assets/Icon_heart.png
+    - assets/Icon_map.png
+    - assets/Icon_review.png
+    - assets/food1.png
+    - assets/food2.png
+    - assets/food3.png
+    - assets/food4.png
+    - assets/rt1.png
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

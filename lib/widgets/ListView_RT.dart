@@ -127,12 +127,14 @@ class _ListViewRtState extends State<ListViewRt> {
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: EdgeInsets.all(screenWidth * 0.01), // 터치 영역 확장
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: isFavorite ? Colors.red : Colors.grey,
-                    size: screenWidth * 0.06,
+                  child: Image.asset(
+                    isFavorite ? 'assets/Heart_P.png' : 'assets/Heart_G.png',
+                    width: screenWidth * 0.06,
+                    height: screenWidth * 0.06,
+                    fit: BoxFit.contain,
                   ),
                 ),
+
               ),
             ],
           ),
