@@ -140,7 +140,7 @@ List<Restaurant> generateSampleRestaurants() {
     Restaurant(
       id: 3,
       name: '동네 감자탕',
-      distance: '0.8km',
+      distance: '1km',
       images: ['assets/images/restaurant3_1.jpg'],
       likeCount: 210,
       commentCount: 56,
