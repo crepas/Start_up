@@ -88,7 +88,7 @@ class _ListScreenState extends State<ListScreen> {
                               // 리뷰 목록
 
                               ReviewList(),
-
+                              SizedBox(height: 3)
                             ],
                           ),
                         ),
