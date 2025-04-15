@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'splash.dart';  // 경로 수정
-import 'login.dart';   // 경로 수정
+import 'screens/splash.dart';  // 경로 수정
+import 'screens/login.dart';   // 경로 수정
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';  // 수정
-import 'KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
-import 'ADListView.dart';
+import 'widgets/KakaoLogin.dart'; // KakaoLoginButton이 정의된 파일
+import 'widgets/ADListView.dart';
 import 'MainScreen.dart'; // 메인 화면 파일 추가
 
 void main() {
