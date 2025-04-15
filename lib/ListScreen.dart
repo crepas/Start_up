@@ -6,6 +6,7 @@ import 'Filter.dart';
 import 'Rt_image.dart';
 import 'Rt_information.dart';
 import 'Rt_ReviewList.dart';
+import 'models/restaurant.dart';
 
 class ListScreen extends StatefulWidget {
   @override
@@ -15,6 +16,14 @@ class ListScreen extends StatefulWidget {
 class _ListScreenState extends State<ListScreen> {
   int _currentIndex = 0;
   int? _expandedIndex; // 현재 확장된 항목의 인덱스를 저장
+  late List<Restaurant> restaurants; // 식당 데이터 목록
+
+  @override
+  void initState() {
+    super.initState();
+    // 샘플 데이터 로드
+    restaurants = generateSampleRestaurants();
+  }
 
   void toggleExpanded(int index) {
     setState(() {
@@ -48,6 +57,14 @@ class _ListScreenState extends State<ListScreen> {
             child: Image.asset(
               'assets/banner.png', // 배너 이미지
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Text('배너 이미지를 불러올 수 없습니다'),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -57,21 +74,24 @@ class _ListScreenState extends State<ListScreen> {
           // 리스트 뷰
           Expanded(
             child: ListView.builder(
-              itemCount: 30,
-              itemBuilder: (context, index) {
-                if (index % 6 == 0) {
-                  // 광고 항목은 확장 기능 없음
-                  return ListView_AD();
-                } else {
-                  // 식당 항목 (확장 가능)
+              itemCount: restaurants.length,
+                itemBuilder: (context, index) {
+                  final restaurant = restaurants[index];
+
                   return Column(
                     children: [
-                      ListView_RT(
+                      restaurant.isAd
+                          ? ListViewAd(
+                        restaurant: restaurant,
+                        isExpanded: _expandedIndex == index,
+                        onTap: () => toggleExpanded(index),
+                      )
+                          : ListViewRt(
+                        restaurant: restaurant,
                         isExpanded: _expandedIndex == index,
                         onTap: () => toggleExpanded(index),
                       ),
 
-                      // 확장된 상태일 때만 상세 정보 표시
                       if (_expandedIndex == index)
                         AnimatedContainer(
                           duration: Duration(milliseconds: 300),
@@ -79,23 +99,20 @@ class _ListScreenState extends State<ListScreen> {
                           color: Colors.white,
                           child: Column(
                             children: [
-                              // 식당 이미지 슬라이더
-                              RtImage(),
-
-                              // 식당 정보
-                              Rt_information(),
-
-                              // 리뷰 목록
-
-                              ReviewList(),
-                              SizedBox(height: 3)
+                              RtImage(images: restaurant.images),
+                              RtInformation(
+                                likeCount: restaurant.likeCount,
+                                commentCount: restaurant.commentCount,
+                              ),
+                              RtReviewList(reviews: restaurant.reviews),
+                              SizedBox(height: 3),
                             ],
                           ),
                         ),
                     ],
                   );
                 }
-              },
+
             ),
           ),
         ],
