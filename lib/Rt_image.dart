@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 class RtImage extends StatefulWidget {
+  final List<String> images;
+
   const RtImage({
     Key? key,
+    required this.images,
   }) : super(key: key);
 
   @override
@@ -10,12 +13,6 @@ class RtImage extends StatefulWidget {
 }
 
 class _RtImageState extends State<RtImage> {
-  final List<String> imageUrls = [
-    'assets/food1.png',
-    'assets/food2.png',
-    'assets/food3.png',
-  ];
-
   int currentPage = 0; // 현재 페이지 (슬라이더에서의 이미지 인덱스)
 
   @override
@@ -26,17 +23,33 @@ class _RtImageState extends State<RtImage> {
     // width를 기준으로 이미지의 가로세로 크기를 동일하게 설정
     final imageSize = screenWidth;
 
+    // 이미지가 없는 경우 기본 이미지 표시
+    if (widget.images.isEmpty) {
+      return Center(
+        child: Container(
+          width: imageSize,
+          height: imageSize,
+          color: Colors.grey[300],
+          child: Icon(
+            Icons.image_not_supported,
+            size: imageSize * 0.3,
+            color: Colors.grey[500],
+          ),
+        ),
+      );
+    }
+
     return Center(
       child: Container(
-        width: imageSize, // 슬라이더와 이미지를 포함하는 박스의 가로 크기
-        height: imageSize, // 슬라이더와 이미지를 포함하는 박스의 세로 크기
+        width: imageSize,
+        height: imageSize,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15), // 둥근 모서리
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2), // 그림자 색상
-              blurRadius: 10, // 그림자 흐림 정도
-              offset: Offset(0, 0.5), // 그림자의 위치
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: screenWidth * 0.02,
+              offset: Offset(0, screenWidth * 0.001),
             ),
           ],
         ),
@@ -53,22 +66,34 @@ class _RtImageState extends State<RtImage> {
   // 이미지 슬라이더를 생성하는 함수
   Widget _buildImageSlider(double imageSize) {
     return PageView.builder(
-      itemCount: imageUrls.length, // 슬라이드할 이미지 개수
+      itemCount: widget.images.length,
       onPageChanged: (index) {
         setState(() {
-          currentPage = index; // 페이지가 변경되면 현재 페이지 업데이트
+          currentPage = index;
         });
       },
       itemBuilder: (context, index) {
         return InteractiveViewer(
-          panEnabled: true, // 드래그로 이미지 이동 가능
-          minScale: 1, // 최소 확대 비율
-          maxScale: 3, // 최대 확대 비율
+          panEnabled: true,
+          minScale: 1,
+          maxScale: 3,
           child: Image.asset(
-            imageUrls[index], // 현재 인덱스의 이미지 로드
-            fit: BoxFit.cover, // 이미지 비율을 유지하면서 크기에 맞게 잘라냄
-            width: imageSize, // 동적으로 설정된 크기
-            height: imageSize, // 동적으로 설정된 크기
+            widget.images[index],
+            fit: BoxFit.cover,
+            width: imageSize,
+            height: imageSize,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: imageSize,
+                height: imageSize,
+                color: Colors.grey[300],
+                child: Icon(
+                  Icons.broken_image,
+                  size: imageSize * 0.2,
+                  color: Colors.grey[500],
+                ),
+              );
+            },
           ),
         );
       },
@@ -78,23 +103,22 @@ class _RtImageState extends State<RtImage> {
   // 현재 이미지 인덱스를 표시하는 위젯 (오른쪽 상단에 표시)
   Widget _buildImageIndex(double imageSize) {
     return Positioned(
-      top: imageSize * 0.025, // 이미지 상단에 약간의 여백을 줘서 위치시킴
-      right: imageSize * 0.025, // 이미지 우측에 약간의 여백을 줘서 위치시킴
+      top: imageSize * 0.025,
+      right: imageSize * 0.025,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: imageSize * 0.025, // 좌우 여백
-          vertical: imageSize * 0.012, // 상하 여백
+          horizontal: imageSize * 0.025,
+          vertical: imageSize * 0.012,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5), // 배경색 반투명 처리
-          borderRadius: BorderRadius.circular(imageSize * 0.038), // 둥근 모서리
-
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(imageSize * 0.038),
         ),
         child: Text(
-          '${currentPage + 1}/${imageUrls.length}', // "현재 페이지/총 이미지 개수"
+          '${currentPage + 1}/${widget.images.length}',
           style: TextStyle(
-            color: Colors.white, // 텍스트 색상: 흰색
-            fontSize: imageSize * 0.03, // 폰트 크기 이미지 크기에 비례
+            color: Colors.white,
+            fontSize: imageSize * 0.03,
           ),
         ),
       ),

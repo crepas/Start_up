@@ -1,46 +1,49 @@
-// ListView_RT.dart 수정
 import 'package:flutter/material.dart';
+import 'models/restaurant.dart';
+import 'package:flutter/services.dart';
 
-class ListView_RT extends StatefulWidget {
+class ListViewRt extends StatefulWidget {
+  final Restaurant restaurant;
   final bool isExpanded;
   final VoidCallback onTap;
 
-  ListView_RT({
+  const ListViewRt({
+    Key? key,
+    required this.restaurant,
     this.isExpanded = false,
     required this.onTap,
-  });
+  }) : super(key: key);
 
   @override
-  _ListView_RTState createState() => _ListView_RTState();
+  _ListViewRtState createState() => _ListViewRtState();
 }
 
-class _ListView_RTState extends State<ListView_RT> {
+class _ListViewRtState extends State<ListViewRt> {
   bool isFavorite = false; // 좋아요 상태를 저장하는 변수
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final baseUnit = screenWidth / 360; // 기준 단위 (360은 디자인 기준 너비)
 
     return GestureDetector(
       onTap: widget.onTap, // 항목 탭 이벤트
       child: Container(
         margin: EdgeInsets.symmetric(
-          vertical: baseUnit * 4, // 4.0
-          horizontal: baseUnit * 8, // 8.0
+          vertical: screenWidth * 0.01,
+          horizontal: screenWidth * 0.02,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(baseUnit * 5), // 5
+          borderRadius: BorderRadius.circular(screenWidth * 0.015),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              offset: Offset(0, baseUnit * 0.8), // 0.8
-              blurRadius: baseUnit * 4, // 4
+              offset: Offset(0, screenWidth * 0.002),
+              blurRadius: screenWidth * 0.01,
               spreadRadius: 0,
             ),
           ],
-          // 선택된 항목 강조 표시 (원하지 않으면 제거)
+          // 선택된 항목 강조 표시
           border: widget.isExpanded
               ? Border.all(color: Colors.blue.withOpacity(0.5), width: 1.5)
               : null,
@@ -49,26 +52,40 @@ class _ListView_RTState extends State<ListView_RT> {
         height: screenWidth * 0.14, // 기존 비율 유지
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.025, // 기존 비율 유지
-            vertical: screenWidth * 0.018, // 기존 비율 유지
+            horizontal: screenWidth * 0.025,
+            vertical: screenWidth * 0.018,
           ),
           child: Row(
             children: [
-              // 음식점 이미지
+              // 음식점 이미지 - 데이터에서 가져옴
               ClipRRect(
-                borderRadius: BorderRadius.circular(baseUnit * 5), // 5
-                child: Image.asset(
-                  'assets/restaurant.png', // 가게 사진
-                  width: screenWidth * 0.12, // 기존 비율 유지
-                  height: screenWidth * 0.12, // 기존 비율 유지
-                  fit: BoxFit.cover, // 이미지가 컨테이너에 맞게 채워지도록 설정
+                borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                child: widget.restaurant.images.isNotEmpty
+                    ? Image.asset(
+                  widget.restaurant.images.first, // 첫 번째 이미지 사용
+                  width: screenWidth * 0.12,
+                  height: screenWidth * 0.12,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: screenWidth * 0.12,
+                      height: screenWidth * 0.12,
+                      color: Colors.grey[300],
+                      child: Icon(Icons.restaurant, color: Colors.grey[600]),
+                    );
+                  },
+                )
+                    : Container(
+                  width: screenWidth * 0.12,
+                  height: screenWidth * 0.12,
+                  color: Colors.grey[300],
+                  child: Icon(Icons.restaurant, color: Colors.grey[600]),
                 ),
               ),
 
-              // 이미지와 텍스트 사이 간격
-              SizedBox(width: screenWidth * 0.02), // 기존 비율 유지
+              SizedBox(width: screenWidth * 0.02),
 
-              // 음식점 정보 컬럼
+              // 음식점 정보 컬럼 - 데이터에서 가져옴
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,10 +93,10 @@ class _ListView_RTState extends State<ListView_RT> {
                   children: [
                     // 음식점 이름
                     Text(
-                      '신촌설렁탕',
+                      widget.restaurant.name,
                       style: TextStyle(
                         color: const Color(0xFF151618),
-                        fontSize: screenWidth * 0.033, // 기존 비율 유지
+                        fontSize: screenWidth * 0.033,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w400,
                       ),
@@ -87,10 +104,10 @@ class _ListView_RTState extends State<ListView_RT> {
 
                     // 거리 텍스트
                     Text(
-                      '350m 이내',
+                      widget.restaurant.distance,
                       style: TextStyle(
                         color: Colors.grey,
-                        fontSize: screenWidth * 0.028, // 기존 비율 유지
+                        fontSize: screenWidth * 0.028,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w400,
                       ),
@@ -102,17 +119,19 @@ class _ListView_RTState extends State<ListView_RT> {
               // 좋아요 버튼 (이벤트 버블링 방지)
               GestureDetector(
                 onTap: () {
-                  // 이 이벤트가 부모 위젯으로 전파되지 않도록 함
+                  HapticFeedback.lightImpact(); // 햅틱 피드백 추가
                   setState(() {
                     isFavorite = !isFavorite; // 상태 토글
                   });
                 },
-                // 이벤트 버블링 방지를 위해 behavior 설정
                 behavior: HitTestBehavior.opaque,
-                child: Image.asset(
-                  isFavorite ? 'assets/Heart_P.png' : 'assets/Heart_G.png',
-                  width: screenWidth * 0.073, // 기존 비율 유지
-                  height: screenWidth * 0.063, // 기존 비율 유지
+                child: Padding(
+                  padding: EdgeInsets.all(screenWidth * 0.01), // 터치 영역 확장
+                  child: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.grey,
+                    size: screenWidth * 0.06,
+                  ),
                 ),
               ),
             ],
