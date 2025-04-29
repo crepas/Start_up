@@ -6,6 +6,7 @@ import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/visit_history_screen.dart';
 
 // 로그인 상태 체크를 위한 클래스
 class AuthCheck extends StatefulWidget {
@@ -83,7 +84,7 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: HomeTab(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      home: SplashScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

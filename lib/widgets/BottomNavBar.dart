@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:start_up/screens/HomeTab.dart';
+import '../screens/HomeTab.dart';
+import '../screens/MenuTab.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -21,8 +22,13 @@ class BottomNavBar extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (context) => HomeTab()),
           );
+        } else if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MenuTab()),
+          );
         } else {
-          onTap(index);
+          onTap(index); // 지도 탭 눌렀을 때만 onTap 호출
         }
       },
       items: [
@@ -39,7 +45,7 @@ class BottomNavBar extends StatelessWidget {
           label: '메뉴',
         ),
       ],
-      selectedItemColor: Colors.green, // 선택된 아이템 색상
+      selectedItemColor: Colors.green,
     );
   }
 }
