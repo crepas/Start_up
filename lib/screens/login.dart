@@ -72,11 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // 자동 로그인 설정 저장
+        final token = responseData['token'];
+        print('서버에서 받은 토큰: $token');
+
         final prefs = await SharedPreferences.getInstance();
 
-        // 토큰 저장 (실제 토큰으로 대체 필요)
-        prefs.setString('token', 'sample_token');
+        prefs.setString('token', token);
         prefs.setString('email', _emailController.text);
         prefs.setString('username', responseData['user']['username']);
 

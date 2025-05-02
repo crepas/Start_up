@@ -125,7 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // 요청 데이터 준비
       final requestData = {
-        'name': _nameController.text.trim(),
+        'username': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
       };
