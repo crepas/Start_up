@@ -7,6 +7,7 @@ import '../widgets/KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'Find_Password.dart';
 import 'Signup.dart';
+import 'package:start_up/utils/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -56,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 실제 백엔드 URL로 변경 필요
-      final url = Uri.parse('http://localhost:8081/login');
+      final url = Uri.parse('${getServerUrl()}/login');
 
       final requestData = {
         'usernameOrEmail': _emailController.text,

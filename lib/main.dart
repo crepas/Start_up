@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash.dart';
@@ -55,19 +57,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
 
-  if (!kIsWeb) {
-    try {
-      await NaverMapSdk.instance.initialize(
-        clientId: '네이버 맵 클라이언트 ID',
-        onAuthFailed: (e) => print("네이버 맵 인증 오류: $e"),
-      );
-    } catch (e) {
-      print("네이버 맵 초기화 오류: $e");
-    }
-  }
+  await FlutterNaverMap().init(
+    clientId: '5v4sw4ol63',
+    onAuthFailed: (ex) {
+      print('인증 실패: ${ex.message}');
+    },
+  );
 
   runApp(MyApp());
 }
+
+
 
 class MyApp extends StatelessWidget {
   @override
@@ -78,6 +78,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         primaryColor: Color(0xFFA0CC71),
+        // AppCompat 테마를 사용하도록 설정
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color(0xFFA0CC71),
+        ),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           primary: Color(0xFFA0CC71),
           secondary: Color(0xFFD2E6A9),

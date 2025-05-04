@@ -3,7 +3,6 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
-        android:name="나루나루"
         android:label="나루나루"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -52,7 +51,7 @@
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="com.naver.maps.map.CLIENT_ID"
-            android:value="h7w445azzw" />
+            android:value="5v4sw4ol63" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

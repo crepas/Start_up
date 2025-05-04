@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:start_up/utils/api_config.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userInfo;
@@ -80,7 +81,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // 두 가지 URL로 시도해 보기
       // 첫 번째 시도: /profile 경로
       final response = await _tryApiCall(
-          'http://localhost:8081/profile',
+          '${getServerUrl()}/profile',
           token,
           requestData
       );
@@ -91,7 +92,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } else if (response.statusCode == 404) {
         // 404 오류가 발생하면 /api/profile로 다시 시도
         final apiResponse = await _tryApiCall(
-            'http://localhost:8081/profile',
+            '${getServerUrl()}/profile',
             token,
             requestData
         );

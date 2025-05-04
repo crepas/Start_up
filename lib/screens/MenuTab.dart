@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart';
-import 'EditProfileScreen.dart'; // 추가된 프로필 편집 화면 import
+import 'EditProfileScreen.dart';
+import 'package:start_up/utils/api_config.dart';
 
 class MenuTab extends StatefulWidget {
   @override
@@ -135,7 +136,7 @@ class _MenuTabState extends State<MenuTab> {
 
       // 서버 API 호출
       final response = await http.get(
-        Uri.parse('http://localhost:8081/profile'),
+        Uri.parse('${getServerUrl()}/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${prefs.getString('token')}',
@@ -195,7 +196,7 @@ class _MenuTabState extends State<MenuTab> {
   Future<void> _logout() async {
     try {
       // 1. 서버에 로그아웃 요청
-      await http.get(Uri.parse('http://localhost:8081/logout'));
+      await http.get(Uri.parse('${getServerUrl()}/logout'));
 
       // 2. 로컬 저장소에서 토큰 및 사용자 정보 삭제
       final prefs = await SharedPreferences.getInstance();
