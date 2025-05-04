@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'EditProfileScreen.dart';
+import 'package:start_up/utils/api_config.dart';
 import '../screens/login.dart';
 
 class MenuTab extends StatefulWidget {
@@ -25,11 +27,6 @@ class _MenuTabState extends State<MenuTab> {
 
   // 메뉴 항목 목록
   final List<Map<String, dynamic>> _menuItems = [
-    {
-      'title': '내 프로필',
-      'icon': Icons.person,
-      'onTap': () {},
-    },
     {
       'title': '찜 목록',
       'icon': Icons.favorite,
@@ -139,11 +136,10 @@ class _MenuTabState extends State<MenuTab> {
 
       // 서버 API 호출
       final response = await http.get(
-        Uri.parse('http://localhost:8081/profile'),
+        Uri.parse('${getServerUrl()}/profile'),
         headers: {
           'Content-Type': 'application/json',
-          // 실제 인증 구현에 따라 토큰 헤더 추가가 필요할 수 있음
-          // 'Authorization': 'Bearer ${prefs.getString('token')}',
+          'Authorization': 'Bearer ${prefs.getString('token')}',
         },
       );
 
@@ -181,11 +177,26 @@ class _MenuTabState extends State<MenuTab> {
     }
   }
 
+  // 프로필 편집 화면으로 이동
+  Future<void> _navigateToEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(userInfo: _userInfo),
+      ),
+    );
+
+    // 프로필이 업데이트되었으면 새로고침
+    if (result == true) {
+      _loadUserInfo();
+    }
+  }
+
   // 로그아웃 처리
   Future<void> _logout() async {
     try {
       // 1. 서버에 로그아웃 요청
-      await http.get(Uri.parse('http://localhost:8081/logout'));
+      await http.get(Uri.parse('${getServerUrl()}/logout'));
 
       // 2. 로컬 저장소에서 토큰 및 사용자 정보 삭제
       final prefs = await SharedPreferences.getInstance();
@@ -286,10 +297,6 @@ class _MenuTabState extends State<MenuTab> {
                     : CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: AssetImage(_userInfo['profileImage']),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    // 이미지 로드 실패 시 기본 아이콘 표시
-                  },
                   child: Icon(
                     Icons.person,
                     size: 30,
@@ -331,18 +338,21 @@ class _MenuTabState extends State<MenuTab> {
                     ],
                   ),
                 ),
-                // 프로필 편집 버튼
+                // 프로필 편집 버튼 - 수정된 부분
                 IconButton(
                   icon: Icon(Icons.edit, color: Color(0xFFA0CC71)),
-                  onPressed: () {
-                    // 프로필 편집 화면으로 이동
+                  onPressed: _isLoading
+                      ? null
+                      : (_userInfo['username'] == '게스트'
+                      ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('프로필 편집 기능은 준비 중입니다'),
+                        content: Text('로그인 후 이용할 수 있습니다.'),
                         duration: Duration(seconds: 2),
                       ),
                     );
-                  },
+                  }
+                      : _navigateToEditProfile),
                 ),
               ],
             ),

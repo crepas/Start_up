@@ -24,7 +24,7 @@ class KakaoLoginButton extends StatelessWidget {
           child: AspectRatio(
             aspectRatio: 28 / 5, // 가로세로 비율 유지
             child: Image.asset(
-              'assets/Kakao_Login.png',
+              'assets/kakao_login.png',
               fit: BoxFit.contain, // 비율 유지하며 조절
             ),
           ),

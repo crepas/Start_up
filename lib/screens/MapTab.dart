@@ -161,8 +161,8 @@ class _MapTabState extends State<MapTab> {
       builder: (context) {
         return Container(
           padding: EdgeInsets.all(16),
-          height: 200,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dart:convert'; // JSON 처리를 위한 import
-import 'package:http/http.dart' as http; // HTTP 요청을 위한 패키지 추가 필요
-import '../screens/HomeTab.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'MainScreen.dart';
 import '../widgets/KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import '../screens/Find_Password.dart';
-import '../screens/Signup.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../utils/api_config.dart';
+import 'Find_Password.dart';
+import 'Signup.dart';
+import 'package:start_up/utils/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 실제 백엔드 URL로 변경 필요
-      final url = Uri.parse('http://localhost:8081/login');
+      final url = Uri.parse('${getServerUrl()}/login');
 
       final requestData = {
         'usernameOrEmail': _emailController.text,
@@ -73,11 +73,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // 자동 로그인 설정 저장
+        final token = responseData['token'];
+        print('서버에서 받은 토큰: $token');
+
         final prefs = await SharedPreferences.getInstance();
 
-        // 토큰 저장 (실제 토큰으로 대체 필요)
-        prefs.setString('token', 'sample_token');
+        prefs.setString('token', token);
         prefs.setString('email', _emailController.text);
         prefs.setString('username', responseData['user']['username']);
 
@@ -90,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeTab()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       } else {
         final responseData = jsonDecode(response.body);
@@ -390,7 +391,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // 홈 화면으로 이동
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => HomeTab()),
+                        MaterialPageRoute(builder: (context) => MainScreen()),
                       );
                     } catch (error) {
                       print('카카오 로그인 실패 $error');
