@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/restaurant.dart';
+import '../widgets/ReviewInputWidget.dart';
 
 class RtReviewList extends StatefulWidget {
   final List<Review> reviews;
@@ -188,6 +189,12 @@ class _RtReviewListState extends State<RtReviewList> {
                                   );
                                 },
                               ),
+                            ),
+
+                            // 리뷰 입력 위젯 추가
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.02),
+                              child: ReviewInputWidget(nickname: '사용자 닉네임'), // 사용자 닉네임을 적절히 전달해주세요
                             ),
                           ],
                         ),

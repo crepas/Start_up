@@ -6,10 +6,16 @@ import 'package:start_up/screens/HomeTab.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+// import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/visit_history_screen.dart';
-
+import '../screens/visit_history_screen.dart';
+import '../screens/review_management.dart';
+import '../screens/app_settings.dart';
+import '../screens/EditProfileScreen.dart';
+import '../screens/ListScreen.dart';
+import '../widgets/Rt_ReviewList.dart';
+import '../screens/favorites_Screen.dart';
+import '../widgets/ReviewInputWidget.dart';
 // 로그인 상태 체크를 위한 클래스
 class AuthCheck extends StatefulWidget {
   @override
@@ -56,12 +62,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
 
-  await FlutterNaverMap().init(
-    clientId: '5v4sw4ol63',
-    onAuthFailed: (ex) {
-      print('인증 실패: ${ex.message}');
-    },
-  );
+  // await FlutterNaverMap().init(
+  //   clientId: '5v4sw4ol63',
+  //   onAuthFailed: (ex) {
+  //     print('인증 실패: ${ex.message}');
+  //   },
+  // );
 
   runApp(MyApp());
   //runApp(ListView_RT()); // runapp() 에 실행 시킬 화면 넣으면 됨
@@ -88,7 +94,7 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: HomeTab(),  // 로그인 화면 대신 메인 화면으로 바로 이동
+      home: ListScreen(),  // 로그인 화면 대신 메인 화면으로 바로 이동
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
