@@ -31,11 +31,10 @@ dependencies:
   http: ^1.1.0
   flutter:
     sdk: flutter
+  image_picker: ^1.0.4
   flutter_naver_map: ^1.3.0+1
-  kakao_flutter_sdk_user: ^1.9.5
-  #kakao_flutter_sdk_common: ^1.9.5
-  #kakao_flutter_sdk_share: ^1.9.5
-
+  kakao_flutter_sdk_user: ^1.9.7+3
+  intl: ^0.18.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -67,8 +66,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/logo.png    
-    - assets/Lock_Icon.png    
+    - assets/logo.png
+    - assets/Lock_Icon.png
     - assets/Mail_Icon.png
     - assets/title.png
     - assets/User_Icon.png
@@ -78,6 +77,18 @@ flutter:
     - assets/samgyupsal.png
     - assets/myung_jin.png
     - assets/onki.png
+    - assets/Heart_G.png
+    - assets/Heart_P.png
+    - assets/banner.png
+    - assets/Icon_heart.png
+    - assets/Icon_map.png
+    - assets/Icon_review.png
+    - assets/food1.png
+    - assets/food2.png
+    - assets/food3.png
+    - assets/food4.png
+    - assets/rt1.png
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

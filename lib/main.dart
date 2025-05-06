@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:start_up/screens/ListScreen.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -70,6 +71,8 @@ void main() async {
 
 
 class MyApp extends StatelessWidget {
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -88,11 +91,12 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: AuthCheck(), // 로그인 체크 화면으로 시작
+      home: ListScreen(), // 로그인 체크 화면으로 시작
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
         '/main': (context) => MainScreen(),
+        '/list': (context) => ListScreen(),
       },
     );
   }

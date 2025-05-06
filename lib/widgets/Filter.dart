@@ -38,11 +38,11 @@ class _FilterState extends State<Filter> {
                         filter['isIcon']
                             ? Icon(filter['icon'])
                             : Image.asset(
-                                filter['icon'],
-                                width: 24,
-                                height: 24,
-                                fit: BoxFit.contain,
-                              ),
+                          filter['icon'],
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
+                        ),
                         SizedBox(width: 8),
                         Text(filter['name']),
                       ],
@@ -108,7 +108,7 @@ class _FilterState extends State<Filter> {
               child: Row(
                 children: selectedFilters.map((filterId) {
                   final filter = filterOptions.firstWhere(
-                    (f) => f['id'] == filterId,
+                        (f) => f['id'] == filterId,
                   );
                   return Container(
                     margin: EdgeInsets.symmetric(
@@ -127,16 +127,16 @@ class _FilterState extends State<Filter> {
                       children: [
                         filter['isIcon']
                             ? Icon(
-                                filter['icon'],
-                                size: baseUnit * 12,
-                                color: Colors.grey.shade700,
-                              )
+                          filter['icon'],
+                          size: baseUnit * 12,
+                          color: Colors.grey.shade700,
+                        )
                             : Image.asset(
-                                filter['icon'],
-                                width: baseUnit * 12,
-                                height: baseUnit * 12,
-                                fit: BoxFit.contain,
-                              ),
+                          filter['icon'],
+                          width: baseUnit * 12,
+                          height: baseUnit * 12,
+                          fit: BoxFit.contain,
+                        ),
                         SizedBox(width: baseUnit * 2),
                         Text(
                           filter['name'],
