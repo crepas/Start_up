@@ -182,13 +182,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_kakao_login:
-    dependency: "direct main"
-    description:
-      path: "lib_packages/flutter_kakao_login/flutter_kakao_login-3.4.1"
-      relative: true
-    source: path
-    version: "3.4.1"
   flutter_lints:
     dependency: "direct dev"
     description:
