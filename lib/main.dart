@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:start_up/screens/ListScreen.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
@@ -16,6 +17,7 @@ import '../screens/ListScreen.dart';
 import '../widgets/Rt_ReviewList.dart';
 import '../screens/favorites_Screen.dart';
 import '../widgets/ReviewInputWidget.dart';
+import 'screens/MainScreen.dart';
 // 로그인 상태 체크를 위한 클래스
 class AuthCheck extends StatefulWidget {
   @override
@@ -62,12 +64,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   KakaoSdk.init(nativeAppKey: '4d02a171ef1f4a73e9fd405e022dc3b2');
 
-  await FlutterNaverMap().init(
-    clientId: '5v4sw4ol63',
-    onAuthFailed: (ex) {
-      print('인증 실패: ${ex.message}');
-    },
-  );
+  // 웹이 아닌 경우에만 네이버 지도 초기화
+  if (!kIsWeb) {
+    try {
+      await FlutterNaverMap().init(
+        clientId: '5v4sw4ol63',
+        onAuthFailed: (ex) {
+          print('인증 실패: ${ex.message}');
+        },
+      );
+    } catch (e) {
+      print('네이버 지도 초기화 실패: $e');
+    }
+  }
 
   runApp(MyApp());
 }
@@ -93,7 +102,7 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: ListScreen(), // 로그인 체크 화면으로 시작
+      home: VisitHistoryScreen(), // 로그인 체크 화면으로 시작
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
