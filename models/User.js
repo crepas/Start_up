@@ -5,10 +5,16 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  token: { type: String },
   preferences: {
-    foodTypes: [String],  // 선호하는 음식 종류 (예: 한식, 일식, 양식 등)
-    priceRange: String,   // 선호하는 가격대
+    foodTypes: [String],
+    priceRange: { type: String, default: '중간' }
   },
+  // 추가된 부분: 사용자가 좋아요한 음식점 ID 목록
+  likedRestaurants: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Restaurant' 
+  }],
   registeredDate: { type: Date, default: Date.now }
 });
 
