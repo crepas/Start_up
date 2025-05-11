@@ -7,7 +7,7 @@ import '../utils/api_config.dart';
 
 class RestaurantService {
   // API 엔드포인트 설정 - 환경에 따라 자동으로 선택
-  final String _apiBaseUrl = _getApiBaseUrl();
+  final String _apiBaseUrl = getServerUrl();
   // 서버 URL 가져오기
   final String baseUrl = getServerUrl();
 

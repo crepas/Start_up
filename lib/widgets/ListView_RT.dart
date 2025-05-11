@@ -104,7 +104,7 @@ class _ListViewRtState extends State<ListViewRt> {
 
                     // 거리 텍스트
                     Text(
-                      widget.restaurant.distance,
+                      widget.restaurant.address,
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: screenWidth * 0.028,

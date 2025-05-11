@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
 
 class Filter extends StatefulWidget {
+  final String? initialFilter;  // 초기 선택된 필터 추가
+
+  const Filter({
+    Key? key,
+    this.initialFilter,
+  }) : super(key: key);
+
   @override
   _FilterState createState() => _FilterState();
 }
 
 class _FilterState extends State<Filter> {
   List<String> selectedFilters = []; // 선택된 필터 목록
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 필터가 있는 경우 추가
+    if (widget.initialFilter != null) {
+      selectedFilters.add(widget.initialFilter!);
+    }
+  }
 
   // 필터 옵션 목록
   final List<Map<String, dynamic>> filterOptions = [
@@ -109,6 +125,12 @@ class _FilterState extends State<Filter> {
                 children: selectedFilters.map((filterId) {
                   final filter = filterOptions.firstWhere(
                         (f) => f['id'] == filterId,
+                        orElse: () => {
+                          'id': filterId,
+                          'name': filterId,
+                          'icon': Icons.help_outline,
+                          'isIcon': true
+                        },
                   );
                   return Container(
                     margin: EdgeInsets.symmetric(

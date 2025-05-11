@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class RtInformation extends StatefulWidget {
-  final int likeCount;
-  final int commentCount;
+  final int likes;
+  final int reviewCount;
   final Function? onMapPressed;
 
   const RtInformation({
     Key? key,
-    required this.likeCount,
-    required this.commentCount,
+    required this.likes,
+    required this.reviewCount,
     this.onMapPressed,
   }) : super(key: key);
 
@@ -51,7 +51,7 @@ class _RtInformationState extends State<RtInformation> {
 
           // 좋아요 수 - 데이터에서 가져옴
           Text(
-            widget.likeCount.toString(),
+            widget.likes.toString(),
             style: TextStyle(color: Colors.black, fontSize: screenWidth * 0.04),
           ),
           SizedBox(width: screenWidth * 0.04),
@@ -65,7 +65,7 @@ class _RtInformationState extends State<RtInformation> {
 
           // 댓글 수 - 데이터에서 가져옴
           Text(
-            widget.commentCount.toString(),
+            widget.reviewCount.toString(),
             style: TextStyle(color: Colors.black, fontSize: screenWidth * 0.04),
           ),
 

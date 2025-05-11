@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'HomeTab.dart';
 import 'MapTab.dart';
 import 'MenuTab.dart';
+import 'ListScreen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -10,8 +11,12 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  final List<String> _categories = ['맛집', '카페', '???', '', ''];
-
+  final List<Map<String, dynamic>> _categories = [
+    {'id': 'distance', 'label': '거리'},
+    {'id': 'price', 'label': '가격'},
+    {'id': 'rating', 'label': '평점'},
+    {'id': 'category', 'label': '카테고리'},
+  ];
   // 음식 데이터 모델 (나중에 API 연결 시 대체될 예정)
   final List<Map<String, dynamic>> _foodItems = [
     {
@@ -27,6 +32,17 @@ class _MainScreenState extends State<MainScreen> {
       'imageUrl': 'assets/onki.png',
     },
   ];
+  final List<String> _sectionTitles = ['#고기', '#분식', '#카페'];
+
+  // 카테고리 선택 시 ListScreen으로 이동
+  void _navigateToListScreen(String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ListScreen(selectedCategory: category),
+      ),
+    );
+  }
 
   // 상태가 변경될 때마다 위젯 다시 생성 - 중요!
   Widget _getBodyWidget() {
@@ -91,28 +107,31 @@ class _MainScreenState extends State<MainScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: _categories.length,
               itemBuilder: (context, index) {
-                return Container(
-                  margin: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Center(
-                          child: Text(
-                            _categories[index],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                return GestureDetector(
+                  onTap: () => _navigateToListScreen(_categories[index]['id']),
+                  child: Container(
+                    margin: EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _categories[index]['label'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
@@ -131,7 +150,7 @@ class _MainScreenState extends State<MainScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0, top: 8.0),
                       child: Text(
-                        '#고기',
+                        _sectionTitles[sectionIndex],
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

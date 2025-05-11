@@ -147,7 +147,7 @@ class _ListViewAdState extends State<ListViewAd> with SingleTickerProviderStateM
                     ),
                   ),
                   Text(
-                    widget.restaurant.distance,
+                    widget.restaurant.address,
                     style: TextStyle(
                       fontSize: screenWidth * 0.03,
                       color: Colors.grey,
