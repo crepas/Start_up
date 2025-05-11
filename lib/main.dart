@@ -102,7 +102,7 @@ class MyApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: VisitHistoryScreen(), // 로그인 체크 화면으로 시작
+      home: SplashScreen(), // 로그인 체크 화면으로 시작
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
