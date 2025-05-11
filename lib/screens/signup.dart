@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'login.dart';
+import '../screens/login.dart';
 import '../widgets/TopAppbar.dart';
 import '../utils/api_config.dart';
 
@@ -12,7 +12,7 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   // 컨트롤러 추가
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -29,7 +29,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void dispose() {
     // 컨트롤러 해제
-    _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -47,7 +47,7 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isValid = true;
 
     // 이름 검증
-    if (_nameController.text.trim().isEmpty) {
+    if (_usernameController.text.trim().isEmpty) {
       setState(() {
         _nameError = '이름을 입력해주세요';
       });
@@ -125,7 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // 요청 데이터 준비
       final requestData = {
-        'username': _nameController.text.trim(),
+        'username': _usernameController.text.trim(),
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
       };
@@ -271,7 +271,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // 입력 필드의 컨트롤러 및 에러 메시지
     List<Map<String, dynamic>> fieldData = [
       {
-        'controller': _nameController,
+        'controller': _usernameController,
         'placeholder': '이름을 입력해주세요',
         'iconPath': "assets/User_Icon.png",
         'obscureText': false,
