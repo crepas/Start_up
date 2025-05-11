@@ -1,85 +1,227 @@
-// services/restaurant_service.dart
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/restaurant.dart';
+import '../utils/api_config.dart';
 
 class RestaurantService {
   // API 엔드포인트 설정 - 환경에 따라 자동으로 선택
   final String _apiBaseUrl = _getApiBaseUrl();
+  // 서버 URL 가져오기
+  final String baseUrl = getServerUrl();
 
-  // 환경에 따른 API 주소 설정
-  static String _getApiBaseUrl() {
-    if (kReleaseMode) {
-      // 실제 배포 환경
-      return 'https://api.yourserver.com/api';
-    } else if (kProfileMode) {
-      // 프로필 모드
-      return 'https://staging-api.yourserver.com/api';
-    } else {
-      // 개발 환경 - 에뮬레이터에서는 10.0.2.2가 호스트의 localhost를 가리킴
-      return 'http://10.0.2.2:3000/api';
-    }
+  // 인증 헤더 가져오기
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token != null ? 'Bearer $token' : '',
+    };
   }
 
-  // 모든 식당 데이터 가져오기
-  Future<List<Restaurant>> getRestaurants() async {
+  // 주변 음식점 목록 가져오기
+  Future<Map<String, dynamic>> getNearbyRestaurants({
+    required double lat,
+    required double lng,
+    int radius = 2000,
+    int page = 1,
+    int limit = 10,
+    String? sort,
+    String? category,
+    String? foodType,
+    String? priceRange,
+    String? query,
+  }) async {
     try {
-      final response = await http.get(Uri.parse('$_apiBaseUrl/restaurants'));
+      final headers = await _getHeaders();
 
-      switch (response.statusCode) {
-        case 200:
-          final List<dynamic> data = json.decode(response.body);
-          return data.map((json) => Restaurant.fromJson(json)).toList();
-        case 401:
-          throw Exception('인증 오류가 발생했습니다. 다시 로그인해주세요.');
-        case 403:
-          throw Exception('접근 권한이 없습니다.');
-        case 404:
-          throw Exception('요청한 데이터를 찾을 수 없습니다.');
-        case 500:
-        case 502:
-        case 503:
-          throw Exception('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-        default:
-          throw Exception('식당 데이터를 불러오는 중 오류가 발생했습니다. (코드: ${response.statusCode})');
-      }
-    } catch (e) {
-      debugPrint('Error fetching restaurants: $e');
-      if (e is Exception) {
-        rethrow; // 이미 처리된 예외는 그대로 전달
-      }
-      throw Exception('네트워크 연결 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
-    }
-  }
+      // 쿼리 파라미터 구성
+      final queryParams = {
+        'lat': lat.toString(),
+        'lng': lng.toString(),
+        'radius': radius.toString(),
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
 
-  // 좋아요 상태 업데이트
-  Future<bool> updateFavoriteStatus(String restaurantId, bool isFavorite) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$_apiBaseUrl/restaurants/$restaurantId/favorite'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'isFavorite': isFavorite}),
+      if (sort != null) queryParams['sort'] = sort;
+      if (category != null) queryParams['category'] = category;
+      if (foodType != null) queryParams['foodType'] = foodType;
+      if (priceRange != null) queryParams['priceRange'] = priceRange;
+      if (query != null) queryParams['query'] = query;
+
+      // URL 구성
+      final uri = Uri.parse('$baseUrl/restaurants').replace(
+        queryParameters: queryParams,
       );
 
-      switch (response.statusCode) {
-        case 200:
-          return true;
-        case 401:
-          throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
-        case 404:
-          throw Exception('해당 식당을 찾을 수 없습니다.');
-        default:
-          throw Exception('좋아요 상태 업데이트 중 오류가 발생했습니다. (코드: ${response.statusCode})');
+      // API 호출
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> restaurantsJson = data['restaurants'];
+
+        // JSON을 Restaurant 객체 리스트로 변환
+        final restaurants = restaurantsJson
+            .map((json) => Restaurant.fromJson(json))
+            .toList();
+
+        return {
+          'restaurants': restaurants,
+          'totalPages': data['totalPages'],
+          'currentPage': data['currentPage'],
+          'total': data['total'],
+        };
+      } else {
+        throw Exception('음식점 데이터를 불러오는데 실패했습니다. 상태 코드: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error updating favorite status: $e');
+      print('주변 음식점 조회 오류: $e');
+      rethrow;
+    }
+  }
+
+  // 음식점 상세 정보 가져오기
+  Future<Restaurant> getRestaurantDetails(String id) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/restaurants/$id'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Restaurant.fromJson(data['restaurant']);
+      } else {
+        throw Exception('음식점 상세 정보를 불러오는데 실패했습니다.');
+      }
+    } catch (e) {
+      print('음식점 상세 조회 오류: $e');
+      rethrow;
+    }
+  }
+
+  // 리뷰 작성하기
+  Future<bool> writeReview({
+    required String restaurantId,
+    required double rating,
+    required String comment,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/restaurants/$restaurantId/reviews'),
+        headers: headers,
+        body: jsonEncode({
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      print('리뷰 작성 오류: $e');
       return false;
     }
   }
 
-  // 오프라인 모드용 샘플 데이터 가져오기
-  List<Restaurant> getSampleRestaurants() {
-    return generateSampleRestaurants();
+  // 좋아요 추가/취소
+  Future<Map<String, dynamic>> toggleLike(String restaurantId) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/restaurants/$restaurantId/like'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'message': data['message'],
+          'likes': data['likes'],
+          'isLiked': data['isLiked'],
+        };
+      } else {
+        throw Exception('좋아요 처리에 실패했습니다.');
+      }
+    } catch (e) {
+      print('좋아요 오류: $e');
+      rethrow;
+    }
+  }
+
+  // 다음 행선지 추천
+  Future<List<Restaurant>> getNextRecommendations({
+    String? currentId,
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      // 쿼리 파라미터 구성
+      final queryParams = <String, String>{};
+
+      if (currentId != null) queryParams['currentId'] = currentId;
+      if (lat != null) queryParams['lat'] = lat.toString();
+      if (lng != null) queryParams['lng'] = lng.toString();
+
+      // URL 구성
+      final uri = Uri.parse('$baseUrl/restaurants/recommend/next').replace(
+        queryParameters: queryParams,
+      );
+
+      // API 호출
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> recommendationsJson = data['recommendations'];
+
+        // JSON을 Restaurant 객체 리스트로 변환
+        return recommendationsJson
+            .map((json) => Restaurant.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('추천 데이터를 불러오는데 실패했습니다.');
+      }
+    } catch (e) {
+      print('추천 조회 오류: $e');
+      rethrow;
+    }
+  }
+
+  // 카테고리별 음식점 가져오기
+  Future<List<Restaurant>> getRestaurantsByCategory(String category, {int limit = 10}) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/restaurants/categories/$category?limit=$limit'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> restaurantsJson = data['restaurants'];
+
+        return restaurantsJson
+            .map((json) => Restaurant.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('카테고리별 음식점 데이터를 불러오는데 실패했습니다.');
+      }
+    } catch (e) {
+      print('카테고리별 음식점 조회 오류: $e');
+      rethrow;
+    }
   }
 }

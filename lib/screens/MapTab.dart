@@ -4,6 +4,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MapTab extends StatefulWidget {
   @override
@@ -15,100 +17,125 @@ class _MapTabState extends State<MapTab> {
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
   NaverMapController? _mapController;
   bool _isLoading = true;
+  bool _isLoadingRestaurants = false;
 
-  // 임시 맛집 데이터 - 나중에 API로 대체
-  final List<Map<String, dynamic>> _restaurants = [
-    {
-      'id': '1',
-      'name': '장터삼겹살',
-      'lat': 37.4512,
-      'lng': 126.7019,
-      'rating': 4.5,
-      'category': '고기/구이',
-    },
-    {
-      'id': '2',
-      'name': '명륜진사갈비',
-      'lat': 37.4522,
-      'lng': 126.7032,
-      'rating': 4.3,
-      'category': '고기/구이',
-    },
-    {
-      'id': '3',
-      'name': '온기족발',
-      'lat': 37.4508,
-      'lng': 126.7027,
-      'rating': 4.1,
-      'category': '족발/보쌈',
-    },
-  ];
+  // 고정된 위치 좌표 (인천 용현동 근처)
+  final double fixedLat = 37.4516;
+  final double fixedLng = 126.7015;
+
+  // 카카오 API에서 받아온 음식점 데이터를 저장할 리스트
+  List<Map<String, dynamic>> _restaurants = [];
 
   @override
   void initState() {
     super.initState();
-    _checkLocationPermission();
-  }
-
-  // 위치 권한 확인 및 요청
-  Future<void> _checkLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // 위치 서비스가 활성화되어 있는지 확인
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('위치 서비스를 활성화해주세요.');
-      return;
-    }
-
-    // 위치 권한 확인
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorSnackBar('위치 권한이 거부되었습니다.');
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('위치 권한이 영구적으로 거부되었습니다. 설정에서 권한을 허용해주세요.');
-      return;
-    }
-
-    setState(() {
-      _isLoading = false;
+    _isLoading = false; // 위치 서비스 없이 바로 로딩 완료
+    // 화면이 준비되면 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchRestaurantsFromKakao();
     });
   }
 
-  // 현재 위치로 지도 이동
-  Future<void> _moveToCurrentLocation() async {
+  // 카카오 로컬 API에서 음식점 데이터 가져오기
+  Future<void> _fetchRestaurantsFromKakao() async {
+    if (_isLoadingRestaurants) return;
+
+    setState(() {
+      _isLoadingRestaurants = true;
+    });
+
     try {
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+      // 카카오 API 키 (실제 키로 변경 필요)
+      final apiKey = '4e4572f409f9b0cd5dc1f574779a03a7';
+
+      // API 요청
+      final response = await http.get(
+        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=맛집&x=$fixedLng&y=$fixedLat&radius=2000'),
+        headers: {
+          'Authorization': 'KakaoAK $apiKey',
+        },
       );
 
-      if (_mapController != null) {
-        // 현재 네이버 맵 API에 맞게 수정
-        await _mapController!.updateCamera(
-          NCameraUpdate.withParams(
-            target: NLatLng(position.latitude, position.longitude),
-            zoom: 15,
-          ),
-        );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> documents = data['documents'];
+
+        setState(() {
+          _restaurants = documents.map((doc) => doc as Map<String, dynamic>).toList();
+          _isLoadingRestaurants = false;
+        });
+
+        // 음식점 마커 추가
+        if (_mapController != null) {
+          _addRestaurantMarkers();
+        }
+
+      } else {
+        print('카카오 API 오류: ${response.statusCode} - ${response.body}');
+        _showErrorSnackBar('음식점 정보를 가져오는데 실패했습니다.');
+        setState(() {
+          _isLoadingRestaurants = false;
+          // API 실패 시 기본 데이터 사용
+          _restaurants = _getDefaultRestaurants();
+        });
+
+        // 기본 데이터로 마커 추가
+        if (_mapController != null) {
+          _addRestaurantMarkers();
+        }
       }
     } catch (e) {
-      _showErrorSnackBar('현재 위치를 가져오는데 실패했습니다.');
+      print('음식점 데이터 가져오기 오류: $e');
+      _showErrorSnackBar('음식점 정보를 가져오는데 실패했습니다.');
+      setState(() {
+        _isLoadingRestaurants = false;
+        // 오류 발생 시 기본 데이터 사용
+        _restaurants = _getDefaultRestaurants();
+      });
+
+      // 기본 데이터로 마커 추가
+      if (_mapController != null) {
+        _addRestaurantMarkers();
+      }
+    }
+  }
+
+  // 기본 음식점 데이터 반환 (API 실패 시 사용)
+  List<Map<String, dynamic>> _getDefaultRestaurants() {
+    return [
+      {
+        'id': '1',
+        'place_name': '장터삼겹살',
+        'y': '37.4512',
+        'x': '126.7019',
+        'category_name': '고기/구이',
+      },
+      {
+        'id': '2',
+        'place_name': '명륜진사갈비',
+        'y': '37.4522',
+        'x': '126.7032',
+        'category_name': '고기/구이',
+      },
+      {
+        'id': '3',
+        'place_name': '온기족발',
+        'y': '37.4508',
+        'x': '126.7027',
+        'category_name': '족발/보쌈',
+      },
+    ];
+  }
+
+  // 고정 위치로 지도 이동
+  void _moveToFixedLocation() {
+    if (_mapController != null) {
+      _mapController!.updateCamera(
+        NCameraUpdate.withParams(
+          target: NLatLng(fixedLat, fixedLng),
+          zoom: 15,
+        ),
+      );
     }
   }
 
@@ -125,29 +152,43 @@ class _MapTabState extends State<MapTab> {
   Future<void> _addRestaurantMarkers() async {
     if (_mapController == null) return;
 
+    // 기존 마커 모두 제거 (실제 앱에서는 마커 ID 추적하여 개별 제거 필요)
+    try {
+      await _mapController!.clearOverlays();
+    } catch (e) {
+      print('마커 제거 오류: $e');
+    }
+
     for (final restaurant in _restaurants) {
-      // 마커 생성
-      final marker = NMarker(
-        id: restaurant['id'],
-        position: NLatLng(restaurant['lat'], restaurant['lng']),
-      );
+      try {
+        // 마커 생성
+        final marker = NMarker(
+          id: restaurant['id'] ?? '',
+          position: NLatLng(
+            double.parse(restaurant['y']),
+            double.parse(restaurant['x']),
+          ),
+        );
 
-      // 마커 정보창
-      final infoWindow = NInfoWindow.onMarker(
-        id: "info_${restaurant['id']}",
-        text: "${restaurant['name']} - ${restaurant['category']} (${restaurant['rating']}⭐)",
-      );
+        // 마커 정보창
+        final infoWindow = NInfoWindow.onMarker(
+          id: "info_${restaurant['id'] ?? ''}",
+          text: "${restaurant['place_name']}", // 가게 이름만 표시
+        );
 
-      // 마커 추가
-      await _mapController!.addOverlay(marker);
+        // 마커 추가
+        await _mapController!.addOverlay(marker);
 
-      // 마커에 정보창 설정
-      marker.openInfoWindow(infoWindow);
+        // 마커에 정보창 설정
+        marker.openInfoWindow(infoWindow);
 
-      // 마커 클릭 이벤트 설정
-      marker.setOnTapListener((overlay) {
-        _showRestaurantInfo(restaurant);
-      });
+        // 마커 클릭 이벤트 설정
+        marker.setOnTapListener((overlay) {
+          _showRestaurantInfo(restaurant);
+        });
+      } catch (e) {
+        print('마커 추가 오류: $e');
+      }
     }
   }
 
@@ -165,43 +206,45 @@ class _MapTabState extends State<MapTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    restaurant['name'],
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber, size: 20),
-                      SizedBox(width: 4),
-                      Text(
-                        restaurant['rating'].toString(),
-                        style: TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              Text(
+                restaurant['place_name'] ?? '이름 없음',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               SizedBox(height: 8),
               Text(
-                restaurant['category'],
+                restaurant['category_name'] ?? '분류 정보 없음',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
               ),
+              SizedBox(height: 4),
+              Text(
+                restaurant['address_name'] ?? '주소 정보 없음',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[800],
+                ),
+              ),
+              if (restaurant['phone'] != null && restaurant['phone'].toString().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    restaurant['phone'],
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ),
               SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildActionButton(Icons.directions, '길찾기'),
+                  // 길찾기 버튼 제거됨
                   _buildActionButton(Icons.favorite_border, '찜하기'),
                   _buildActionButton(Icons.share, '공유하기'),
                 ],
@@ -210,10 +253,17 @@ class _MapTabState extends State<MapTab> {
               OutlinedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // 상세 페이지로 이동하는 로직 (나중에 구현)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('맛집 상세 페이지는 준비 중입니다.')),
-                  );
+                  // 카카오맵으로 연결
+                  if (restaurant['place_url'] != null) {
+                    // 실제 앱에서는 URL 런처를 사용하여 웹 브라우저나 카카오맵 앱으로 연결
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('상세 페이지로 이동 기능은 준비 중입니다.')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('상세 페이지 정보가 없습니다.')),
+                    );
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   minimumSize: Size(double.infinity, 40),
@@ -258,11 +308,11 @@ class _MapTabState extends State<MapTab> {
               : NaverMap(
             options: NaverMapViewOptions(
               initialCameraPosition: NCameraPosition(
-                target: NLatLng(37.4516, 126.7015), // 용현동 중심 좌표 (임시)
+                target: NLatLng(fixedLat, fixedLng), // 고정된 위치 좌표
                 zoom: 15,
               ),
               indoorEnable: true,
-              locationButtonEnable: true,
+              locationButtonEnable: false, // 위치 버튼 비활성화
               consumeSymbolTapEvents: false,
             ),
             onMapReady: (controller) async {
@@ -296,17 +346,12 @@ class _MapTabState extends State<MapTab> {
                   IconButton(
                     icon: Icon(Icons.refresh),
                     onPressed: () async {
-                      // 지도 새로고침 기능
-                      final controller = await _mapControllerCompleter.future;
-                      controller.updateCamera(
-                        NCameraUpdate.withParams(
-                          target: NLatLng(37.4516, 126.7015), // 용현동 중심 좌표 (임시)
-                          zoom: 15,
-                        ),
-                      );
+                      // 음식점 데이터 새로고침
+                      await _fetchRestaurantsFromKakao();
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('지도를 새로고침했습니다'),
+                          content: Text('맛집 정보를 새로고침했습니다'),
                           duration: Duration(seconds: 1),
                         ),
                       );
@@ -317,14 +362,14 @@ class _MapTabState extends State<MapTab> {
             ),
           ),
 
-          // 현재 위치 버튼
+          // 센터 위치 버튼 (위치 서비스 대신 고정 위치로 이동)
           Positioned(
             right: 16,
             bottom: 100,
             child: FloatingActionButton(
               backgroundColor: Colors.white,
-              child: Icon(Icons.my_location, color: Colors.black),
-              onPressed: _moveToCurrentLocation,
+              child: Icon(Icons.center_focus_strong, color: Colors.black),
+              onPressed: _moveToFixedLocation,
             ),
           ),
 
@@ -394,6 +439,15 @@ class _MapTabState extends State<MapTab> {
               ),
             ),
           ),
+
+          // 로딩 표시
+          if (_isLoadingRestaurants)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
         ],
       ),
     );

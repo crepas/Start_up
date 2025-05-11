@@ -51,62 +51,62 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
 
-            // 환영 메시지 배너
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              color: Color(0xFFD2E6A9), // 연한 녹색 배경
-              child: Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(color: Colors.black),
-                    children: [
-                      TextSpan(text: '✨ '),
-                      TextSpan(
-                        text: '용현동 맛집 랭킹',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: ' ✨'),
-                    ],
-                  ),
+          // 환영 메시지 배너
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            color: Color(0xFFD2E6A9), // 연한 녹색 배경
+            child: Center(
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(color: Colors.black),
+                  children: [
+                    TextSpan(text: '✨ '),
+                    TextSpan(
+                      text: '용현동 맛집 랭킹',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(text: ' ✨'),
+                  ],
                 ),
               ),
             ),
+          ),
 
-            // 카테고리 버튼
-            Container(
-              height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: EdgeInsets.all(10),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _categories[index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+          // 카테고리 버튼
+          Container(
+            height: 80,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _categories[index],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
+          ),
 
             // 음식 목록 섹션들 - Expanded로 감싸서 남은 공간을 차지하도록 함
             Expanded(

@@ -2,39 +2,66 @@
 import 'package:flutter/material.dart';
 
 class Restaurant {
-  final int id;
+  final String id;
   final String name;
-  final String distance;
-  final List<String> images;
-  final int likeCount;
-  final int commentCount;
-  final bool isAd;
+  final String address;
+  final String roadAddress;
+  final double lat;
+  final double lng;
+  final String categoryName;
+  final List<String> foodTypes;
+  final String phone;
+  final String placeUrl;
+  final String priceRange;
+  final double rating;
+  final int likes;
   final List<Review> reviews;
+  final List<String> images;
+  final bool isLiked;
 
   Restaurant({
     required this.id,
     required this.name,
-    required this.distance,
-    required this.images,
-    required this.likeCount,
-    required this.commentCount,
-    this.isAd = false,
+    required this.address,
+    required this.roadAddress,
+    required this.lat,
+    required this.lng,
+    required this.categoryName,
+    required this.foodTypes,
+    required this.phone,
+    required this.placeUrl,
+    required this.priceRange,
+    required this.rating,
+    required this.likes,
     required this.reviews,
+    required this.images,
+    this.isLiked = false,
   });
 
   // JSON에서 Restaurant 객체로 변환
   factory Restaurant.fromJson(Map<String, dynamic> json) {
+    final location = json['location'];
+    final coordinates = location['coordinates'];
+
     return Restaurant(
-      id: json['id'],
+      id: json['_id'],
       name: json['name'],
-      distance: json['distance'],
-      images: List<String>.from(json['images']),
-      likeCount: json['likeCount'],
-      commentCount: json['commentCount'],
-      isAd: json['isAd'] ?? false,
-      reviews: (json['reviews'] as List)
-          .map((review) => Review.fromJson(review))
-          .toList(),
+      address: json['address'],
+      roadAddress: json['roadAddress'] ?? '',
+      lat: coordinates[1].toDouble(),
+      lng: coordinates[0].toDouble(),
+      categoryName: json['categoryName'],
+      foodTypes: List<String>.from(json['foodTypes'] ?? []),
+      phone: json['phone'] ?? '',
+      placeUrl: json['placeUrl'] ?? '',
+      priceRange: json['priceRange'] ?? '중간',
+      rating: json['rating']?.toDouble() ?? 0.0,
+      likes: json['likes'] ?? 0,
+      reviews: (json['reviews'] as List<dynamic>?)
+          ?.map((review) => Review.fromJson(review))
+          .toList() ?? [],
+      images: List<String>.from(json['images'] ?? []),
+      isLiked: json['isLiked'] ?? false,
     );
   }
 
@@ -54,26 +81,30 @@ class Restaurant {
 }
 
 class Review {
-  final int id;
-  final String nickname;
-  final String content;
-  final List<String> images;
-  final DateTime createdAt;
+  final String? userId;
+  final String username;
+  final String comment;
+  final double rating;
+  final DateTime date;
 
   Review({
-    required this.id,
-    required this.nickname,
-    required this.content,
-    required this.images,
-    required this.createdAt,
+    this.userId,
+    required this.username,
+    required this.comment,
+    required this.rating,
+    required this.date,
   });
 
   // JSON에서 Review 객체로 변환
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'],
-      nickname: json['nickname'],
-      content: json['content'],
+      userId: json['userId'],
+      username: json['username'],
+      comment: json['comment'],
+      rating: json['rating']?.toDouble() ?? 0.0,
+      date: json['date'] != null
+          ? DateTime.parse(json['date'])
+          : DateTime.now(),
       images: List<String>.from(json['images']),
       createdAt: DateTime.parse(json['createdAt']),
     );

@@ -15,11 +15,11 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(Duration(seconds: 1), () {  // 1초로 변경
       // 로그인 상태 확인
       bool isLoggedIn = false;  // 여기에 실제 로그인 확인 로직 구현
-      
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => isLoggedIn ? HomeTab() : LoginScreen(),
+          builder: (context) => isLoggedIn ? MainScreen() : LoginScreen(),
         ),
       );
     });
