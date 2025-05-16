@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/TopAppbar.dart';
 
 class ReviewManagementTab extends StatefulWidget {
   @override
@@ -11,7 +12,8 @@ class ReviewManagementTab extends StatefulWidget {
 class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   List<Map<String, dynamic>> _myReviews = [];
-  
+  List<Map<String, dynamic>> _savedReviews = []; // 저장한 리뷰를 위한 리스트 추가
+
   TabController? _tabController;
   final List<String> _tabs = ['작성한 리뷰', '저장한 리뷰'];
 
@@ -167,9 +169,9 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
     final String restaurantName = review['restaurantName'] ?? '식당 이름 없음';
     final int rating = review['rating'] ?? 0;
     final String content = review['content'] ?? '내용 없음';
-    final String date = review['createdAt'] != null 
-      ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
-      : '날짜 정보 없음';
+    final String date = review['createdAt'] != null
+        ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
+        : '날짜 정보 없음';
 
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -179,51 +181,75 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 식당 이름과 별점
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  restaurantName,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    restaurantName,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
+                SizedBox(width: 8),
                 Row(
-                  children: [
-                    ...List.generate(5, (index) => Icon(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) => Padding(
+                    padding: EdgeInsets.only(left: 2),
+                    child: Icon(
                       index < rating ? Icons.star : Icons.star_border,
                       color: index < rating ? Colors.amber : Colors.grey,
                       size: 20,
-                    )),
-                  ],
+                    ),
+                  )),
                 ),
               ],
             ),
             SizedBox(height: 8),
+            // 리뷰 내용
             Text(
               content,
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 8),
+            // 날짜와 버튼
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  date,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
+                Expanded(
+                  child: Text(
+                    date,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.edit, color: Colors.blue, size: 20),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      icon: Icon(Icons.edit, color: Colors.blue),
                       onPressed: () => _navigateToEditReview(review),
                     ),
+                    SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      icon: Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _deleteReview(review['_id']),
                     ),
                   ],
@@ -242,9 +268,9 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
     final String authorName = review['authorName'] ?? '작성자 정보 없음';
     final int rating = review['rating'] ?? 0;
     final String content = review['content'] ?? '내용 없음';
-    final String date = review['createdAt'] != null 
-      ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
-      : '날짜 정보 없음';
+    final String date = review['createdAt'] != null
+        ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
+        : '날짜 정보 없음';
 
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -257,35 +283,33 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      restaurantName,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Expanded(
+                  child: Text(
+                    restaurantName,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      '작성자: $authorName',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Row(
-                  children: [
-                    ...List.generate(5, (index) => Icon(
-                      index < rating ? Icons.star : Icons.star_border,
-                      color: index < rating ? Colors.amber : Colors.grey,
-                      size: 20,
-                    )),
-                  ],
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) => Icon(
+                    index < rating ? Icons.star : Icons.star_border,
+                    color: index < rating ? Colors.amber : Colors.grey,
+                    size: 20,
+                  )),
                 ),
               ],
+            ),
+            SizedBox(height: 4),
+            Text(
+              '작성자: $authorName',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
             ),
             SizedBox(height: 8),
             Text(
@@ -304,9 +328,12 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.bookmark_remove, color: Colors.red, size: 20),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  icon: Icon(Icons.bookmark_remove, color: Colors.red),
                   onPressed: () {
-                    // 저장한 리뷰 삭제 기능
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('저장한 리뷰 삭제 기능은 준비 중입니다')),
                     );
@@ -323,34 +350,42 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('리뷰 관리'),
-        backgroundColor: Color(0xFFA0CC71),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: _tabs.map((String tab) => Tab(text: tab)).toList(),
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-        ),
+      appBar: CommonAppBar(
+        title: '리뷰 관리',
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          // 작성한 리뷰 탭
-          _isLoading
-            ? Center(child: CircularProgressIndicator())
-            : _myReviews.isEmpty
-              ? Center(child: Text('작성한 리뷰가 없습니다'))
-              : ListView.builder(
+          TabBar(
+            controller: _tabController,
+            tabs: _tabs.map((String tab) => Tab(
+              text: tab,
+            )).toList(),
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Color(0xFFA0CC71),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // 작성한 리뷰 탭
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : _myReviews.isEmpty
+                    ? Center(child: Text('작성한 리뷰가 없습니다'))
+                    : ListView.builder(
+                  padding: EdgeInsets.only(bottom: 80),
                   itemCount: _myReviews.length,
                   itemBuilder: (context, index) => _buildReviewCard(_myReviews[index]),
                 ),
-          
-          // 저장한 리뷰 탭
-          _isLoading
-            ? Center(child: CircularProgressIndicator())
-            : Center(child: Text('저장한 리뷰 기능은 준비 중입니다')),
+
+                // 저장한 리뷰 탭 (임시 데이터 표시용)
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : Center(child: Text('저장한 리뷰 기능은 준비 중입니다')),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

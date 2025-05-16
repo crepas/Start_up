@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:start_up/screens/ListScreen.dart';
+import 'package:start_up/screens/MenuTab.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -18,6 +19,7 @@ import '../widgets/Rt_ReviewList.dart';
 import '../screens/favorites_Screen.dart';
 import '../widgets/ReviewInputWidget.dart';
 import 'screens/MainScreen.dart';
+import 'theme/light_theme.dart';
 // 로그인 상태 체크를 위한 클래스
 class AuthCheck extends StatefulWidget {
   @override
@@ -81,28 +83,15 @@ void main() async {
   runApp(MyApp());
 }
 
-
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '나루나루',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        primaryColor: Color(0xFFA0CC71),
-        // AppCompat 테마를 사용하도록 설정
-        appBarTheme: AppBarTheme(
-          backgroundColor: Color(0xFFA0CC71),
-        ),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: Color(0xFFA0CC71),
-          secondary: Color(0xFFD2E6A9),
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MainScreen(), // 로그인 체크 화면으로 시작
+      theme: lightTheme,  // 라이트 테마
+      themeMode: ThemeMode.system,  // 시스템 설정에 따라 테마 전환
+      home: MenuTab(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'EditProfileScreen.dart';
 import 'package:start_up/utils/api_config.dart';
 import '../screens/login.dart';
+import '../screens/favorites_screen.dart';
+import '../screens/visit_history_screen.dart';
+import '../screens/app_settings.dart';
+import '../screens/review_management.dart';
 
 class MenuTab extends StatefulWidget {
   @override
@@ -24,51 +28,84 @@ class _MenuTabState extends State<MenuTab> {
   };
 
   bool _isLoading = true;
-
-  // 메뉴 항목 목록
-  final List<Map<String, dynamic>> _menuItems = [
-    {
-      'title': '찜 목록',
-      'icon': Icons.favorite,
-      'onTap': () {},
-    },
-    {
-      'title': '방문 기록',
-      'icon': Icons.history,
-      'onTap': () {},
-    },
-    {
-      'title': '리뷰 관리',
-      'icon': Icons.rate_review,
-      'onTap': () {},
-    },
-    {
-      'title': '앱 설정',
-      'icon': Icons.settings,
-      'onTap': () {},
-    },
-    {
-      'title': '알림 설정',
-      'icon': Icons.notifications,
-      'onTap': () {},
-    },
-    {
-      'title': '고객 지원',
-      'icon': Icons.help,
-      'onTap': () {},
-    },
-    {
-      'title': '로그아웃',
-      'icon': Icons.logout,
-      'onTap': () {},
-      'isRed': true,
-    },
-  ];
+  late List<Map<String, dynamic>> _menuItems;
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _initializeMenuItems();
+  }
+
+  void _initializeMenuItems() {
+    _menuItems = [
+      {
+        'title': '찜 목록',
+        'icon': Icons.favorite,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => FavoritesScreen()),
+          );
+        },
+      },
+      {
+        'title': '방문 기록',
+        'icon': Icons.history,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => VisitHistoryScreen()),
+          );
+        },
+      },
+      {
+        'title': '리뷰 관리',
+        'icon': Icons.rate_review,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ReviewManagementTab()),
+          );
+        },
+      },
+      {
+        'title': '앱 설정',
+        'icon': Icons.settings,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AppSettingsTab()),
+          );
+        },
+      },
+      {
+        'title': '알림 설정',
+        'icon': Icons.notifications,
+        'onTap': () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('알림 설정 기능은 준비 중입니다')),
+          );
+        },
+      },
+      {
+        'title': '고객 지원',
+        'icon': Icons.help,
+        'onTap': () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('고객 지원 기능은 준비 중입니다')),
+          );
+        },
+      },
+      {
+        'title': '로그아웃',
+        'icon': Icons.logout,
+        'onTap': () {
+          _showLogoutDialog();
+        },
+        'isRed': true,
+      },
+    ];
   }
 
   // 사용자 정보 로드
@@ -360,44 +397,33 @@ class _MenuTabState extends State<MenuTab> {
 
           // 메뉴 목록
           Expanded(
-            child: ListView.builder(
-              itemCount: _menuItems.length,
-              itemBuilder: (context, index) {
-                final item = _menuItems[index];
-                final bool isRed = item['isRed'] ?? false;
+            child: Material(
+              child: ListView.builder(
+                itemCount: _menuItems.length,
+                itemBuilder: (context, index) {
+                  final item = _menuItems[index];
+                  final bool isRed = item['isRed'] ?? false;
 
-                return ListTile(
-                  leading: Icon(
-                    item['icon'],
-                    color: isRed ? Colors.red : Colors.grey[700],
-                  ),
-                  title: Text(
-                    item['title'],
-                    style: TextStyle(
-                      color: isRed ? Colors.red : Colors.black,
-                      fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
+                  return ListTile(
+                    leading: Icon(
+                      item['icon'],
+                      color: isRed ? Colors.red : Colors.grey[700],
                     ),
-                  ),
-                  trailing: Icon(
-                    Icons.chevron_right,
-                    color: Colors.grey[400],
-                  ),
-                  onTap: () {
-                    // 로그아웃 처리
-                    if (item['title'] == '로그아웃') {
-                      _showLogoutDialog();
-                    } else {
-                      // 다른 메뉴 항목 처리
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${item['title']} 기능은 준비 중입니다'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
+                    title: Text(
+                      item['title'],
+                      style: TextStyle(
+                        color: isRed ? Colors.red : Colors.black,
+                        fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey[400],
+                    ),
+                    onTap: item['onTap'],
+                  );
+                },
+              ),
             ),
           ),
 

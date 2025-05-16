@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../utils/api_config.dart';
+import '../widgets/TopAppbar.dart';
 
 class VisitHistoryScreen extends StatefulWidget {
   @override
@@ -174,9 +175,8 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('방문 기록'),
-        backgroundColor: Color(0xFFA0CC71),
+      appBar: CommonAppBar(
+        title: '방문 기록',
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())

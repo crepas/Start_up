@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/TopAppbar.dart';
 
 class FavoritesScreen extends StatefulWidget {
   @override
@@ -132,9 +133,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('찜 목록'),
-        backgroundColor: Color(0xFFA0CC71),
+      appBar: CommonAppBar(
+        title: '찜 목록',
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/TopAppbar.dart';
 
 class AppSettingsTab extends StatefulWidget {
   @override
@@ -20,6 +21,22 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
     'privacyPolicy': '개인정보 처리방침 버전 1.0',
     'termsOfService': '서비스 이용약관 버전 1.0',
   };
+
+  // 스위치 스타일 정의
+  final _switchTheme = SwitchThemeData(
+    thumbColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+      if (states.contains(MaterialState.selected)) {
+        return Color(0xFFA0CC71);
+      }
+      return Color(0xFF9A9C98);
+    }),
+    trackColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+      if (states.contains(MaterialState.selected)) {
+        return Color(0xFFA0CC71).withOpacity(0.5);
+      }
+      return Color(0xFF9A9C98).withOpacity(0.5);
+    }),
+  );
 
   @override
   void initState() {
@@ -293,80 +310,83 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
       return Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('앱 설정'),
-        backgroundColor: Color(0xFFA0CC71),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        switchTheme: _switchTheme,
       ),
-      body: ListView(
-        children: [
-          // 일반 설정
-          _buildSectionHeader('일반'),
-          SwitchListTile(
-            title: Text('다크 모드'),
-            value: _settings['darkMode'],
-            onChanged: (bool value) {
-              _updateSetting('darkMode', value);
-            },
-            secondary: Icon(Icons.dark_mode),
-          ),
-          ListTile(
-            title: Text('언어'),
-            subtitle: Text(_settings['language']),
-            leading: Icon(Icons.language),
-            trailing: Icon(Icons.chevron_right),
-            onTap: _showLanguageDialog,
-          ),
-          ListTile(
-            title: Text('거리 단위'),
-            subtitle: Text(_settings['distanceUnit']),
-            leading: Icon(Icons.straighten),
-            trailing: Icon(Icons.chevron_right),
-            onTap: _showDistanceUnitDialog,
-          ),
-          
-          // 위치 설정
-          _buildSectionHeader('위치'),
-          SwitchListTile(
-            title: Text('자동 위치 업데이트'),
-            subtitle: Text('현재 위치를 자동으로 업데이트합니다'),
-            value: _settings['autoUpdateLocation'],
-            onChanged: (bool value) {
-              _updateSetting('autoUpdateLocation', value);
-            },
-            secondary: Icon(Icons.location_on),
-          ),
-          
-          // 데이터 및 개인 정보
-          _buildSectionHeader('데이터 및 개인 정보'),
-          SwitchListTile(
-            title: Text('검색 기록 저장'),
-            subtitle: Text('검색 기록을 저장하여 더 나은 추천을 제공합니다'),
-            value: _settings['searchHistory'],
-            onChanged: (bool value) {
-              _updateSetting('searchHistory', value);
-            },
-            secondary: Icon(Icons.history),
-          ),
-          SwitchListTile(
-            title: Text('사용 데이터 수집'),
-            subtitle: Text('앱 개선을 위한 익명 데이터를 수집합니다'),
-            value: _settings['dataCollection'],
-            onChanged: (bool value) {
-              _updateSetting('dataCollection', value);
-            },
-            secondary: Icon(Icons.data_usage),
-          ),
-          
-          // 법적 정보
-          _buildSectionHeader('법적 정보'),
-          ListTile(
-            title: Text('개인정보 처리방침'),
-            subtitle: Text(_settings['privacyPolicy']),
-            leading: Icon(Icons.privacy_tip),
-            trailing: Icon(Icons.chevron_right),
-            onTap: () {
-              _showLegalInfoDialog('개인정보 처리방침', '''
+      child: Scaffold(
+        appBar: CommonAppBar(
+          title: '앱 설정',
+        ),
+        body: ListView(
+          children: [
+            // 일반 설정
+            _buildSectionHeader('일반'),
+            SwitchListTile(
+              title: Text('다크 모드'),
+              value: _settings['darkMode'],
+              onChanged: (bool value) {
+                _updateSetting('darkMode', value);
+              },
+              secondary: Icon(Icons.dark_mode),
+            ),
+            ListTile(
+              title: Text('언어'),
+              subtitle: Text(_settings['language']),
+              leading: Icon(Icons.language),
+              trailing: Icon(Icons.chevron_right),
+              onTap: _showLanguageDialog,
+            ),
+            ListTile(
+              title: Text('거리 단위'),
+              subtitle: Text(_settings['distanceUnit']),
+              leading: Icon(Icons.straighten),
+              trailing: Icon(Icons.chevron_right),
+              onTap: _showDistanceUnitDialog,
+            ),
+            
+            // 위치 설정
+            _buildSectionHeader('위치'),
+            SwitchListTile(
+              title: Text('자동 위치 업데이트'),
+              subtitle: Text('현재 위치를 자동으로 업데이트합니다'),
+              value: _settings['autoUpdateLocation'],
+              onChanged: (bool value) {
+                _updateSetting('autoUpdateLocation', value);
+              },
+              secondary: Icon(Icons.location_on),
+            ),
+            
+            // 데이터 및 개인 정보
+            _buildSectionHeader('데이터 및 개인 정보'),
+            SwitchListTile(
+              title: Text('검색 기록 저장'),
+              subtitle: Text('검색 기록을 저장하여 더 나은 추천을 제공합니다'),
+              value: _settings['searchHistory'],
+              onChanged: (bool value) {
+                _updateSetting('searchHistory', value);
+              },
+              secondary: Icon(Icons.history),
+            ),
+            SwitchListTile(
+              title: Text('사용 데이터 수집'),
+              subtitle: Text('앱 개선을 위한 익명 데이터를 수집합니다'),
+              value: _settings['dataCollection'],
+              onChanged: (bool value) {
+                _updateSetting('dataCollection', value);
+              },
+              secondary: Icon(Icons.data_usage),
+            ),
+            
+            // 법적 정보
+            _buildSectionHeader('법적 정보'),
+            ListTile(
+              title: Text('개인정보 처리방침'),
+              subtitle: Text(_settings['privacyPolicy']),
+              leading: Icon(Icons.privacy_tip),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                _showLegalInfoDialog('개인정보 처리방침', '''
 나루나루 앱은 사용자의 개인정보를 중요하게 생각하며 관련 법규를 준수합니다.
 
 1. 수집하는 개인정보
@@ -386,16 +406,16 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
 
 5. 문의처
 개인정보 관련 문의: privacy@narunaru.com
-              ''');
-            },
-          ),
-          ListTile(
-            title: Text('서비스 이용약관'),
-            subtitle: Text(_settings['termsOfService']),
-            leading: Icon(Icons.description),
-            trailing: Icon(Icons.chevron_right),
-            onTap: () {
-              _showLegalInfoDialog('서비스 이용약관', '''
+                ''');
+              },
+            ),
+            ListTile(
+              title: Text('서비스 이용약관'),
+              subtitle: Text(_settings['termsOfService']),
+              leading: Icon(Icons.description),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                _showLegalInfoDialog('서비스 이용약관', '''
 나루나루 앱 서비스 이용약관
 
 1. 서비스 소개
@@ -423,60 +443,61 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
 
 7. 준거법 및 분쟁 해결
 본 약관은 대한민국 법률에 따라 규율되며, 분쟁 발생 시 협의 후 소비자분쟁해결기준에 따름
-              ''');
-            },
-          ),
-          
-          ListTile(
-            title: Text('앱 정보'),
-            subtitle: Text('버전 1.0.0'),
-            leading: Icon(Icons.info),
-            onTap: () {
-              // 앱 정보 화면으로 이동
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('앱 정보 화면은 준비 중입니다')),
-              );
-            },
-          ),
-          
-          ListTile(
-            title: Text('캐시 지우기'),
-            subtitle: Text('로컬에 저장된 임시 데이터를 삭제합니다'),
-            leading: Icon(Icons.cleaning_services),
-            onTap: () {
-              // 캐시 지우기 기능
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('캐시 지우기'),
-                    content: Text('저장된 임시 데이터를 모두 삭제하시겠습니까?'),
-                    actions: [
-                      TextButton(
-                        child: Text('취소'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      TextButton(
-                        child: Text('삭제'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // 실제 캐시 삭제 로직 구현
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('캐시가 삭제되었습니다')),
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-          
-          SizedBox(height: 20),
-        ],
+                ''');
+              },
+            ),
+            
+            ListTile(
+              title: Text('앱 정보'),
+              subtitle: Text('버전 1.0.0'),
+              leading: Icon(Icons.info),
+              onTap: () {
+                // 앱 정보 화면으로 이동
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('앱 정보 화면은 준비 중입니다')),
+                );
+              },
+            ),
+            
+            ListTile(
+              title: Text('캐시 지우기'),
+              subtitle: Text('로컬에 저장된 임시 데이터를 삭제합니다'),
+              leading: Icon(Icons.cleaning_services),
+              onTap: () {
+                // 캐시 지우기 기능
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('캐시 지우기'),
+                      content: Text('저장된 임시 데이터를 모두 삭제하시겠습니까?'),
+                      actions: [
+                        TextButton(
+                          child: Text('취소'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: Text('삭제'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            // 실제 캐시 삭제 로직 구현
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('캐시가 삭제되었습니다')),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            
+            SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
