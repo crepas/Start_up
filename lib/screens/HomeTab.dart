@@ -32,6 +32,9 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return SafeArea(
       child: Scaffold(
         body: Column(
@@ -51,64 +54,64 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
 
-          // 환영 메시지 배너
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            color: Color(0xFFD2E6A9), // 연한 녹색 배경
-            child: Center(
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(color: Colors.black),
-                  children: [
-                    TextSpan(text: '✨ '),
-                    TextSpan(
-                      text: '용현동 맛집 랭킹',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: ' ✨'),
-                  ],
+            // 환영 메시지 배너
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              color: colorScheme.secondary.withOpacity(0.3),
+              child: Center(
+                child: RichText(
+                  text: TextSpan(
+                    style: theme.textTheme.bodyLarge,
+                    children: [
+                      TextSpan(text: '✨ '),
+                      TextSpan(
+                        text: '용현동 맛집 랭킹',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(text: ' ✨'),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 카테고리 버튼
-          Container(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Center(
-                          child: Text(
-                            _categories[index],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
+            // 카테고리 버튼
+            Container(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.cardColor,
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _categories[index],
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
 
-            // 음식 목록 섹션들 - Expanded로 감싸서 남은 공간을 차지하도록 함
+            // 음식 목록 섹션들
             Expanded(
               child: ListView.builder(
                 itemCount: _sections.length,
@@ -121,9 +124,8 @@ class _HomeTabState extends State<HomeTab> {
                         padding: const EdgeInsets.only(left: 16.0, top: 8.0),
                         child: Text(
                           _sections[sectionIndex],
-                          style: TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         ),
                       ),
@@ -146,15 +148,13 @@ class _HomeTabState extends State<HomeTab> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10.0),
                                       child: Container(
-                                        color: Colors.grey[300], // 이미지 로딩 전 배경색
+                                        color: theme.cardColor,
                                         child: Image.asset(
                                           _foodItems[index]['imageUrl'],
                                           fit: BoxFit.cover,
                                           width: double.infinity,
-                                          errorBuilder: (context, error,
-                                              stackTrace) {
-                                            return Center(child: Icon(
-                                                Icons.image_not_supported));
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Center(child: Icon(Icons.image_not_supported));
                                           },
                                         ),
                                       ),
@@ -166,7 +166,7 @@ class _HomeTabState extends State<HomeTab> {
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
                                       _foodItems[index]['title'],
-                                      style: TextStyle(fontSize: 12.0),
+                                      style: theme.textTheme.bodySmall,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -177,19 +177,12 @@ class _HomeTabState extends State<HomeTab> {
                           },
                         ),
                       ),
-
-
                     ],
                   );
                 },
               ),
             ),
-
-
-
           ],
-
-
         ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: _currentIndex,
@@ -200,8 +193,6 @@ class _HomeTabState extends State<HomeTab> {
           },
         ),
       ),
-
-
     );
   }
 }

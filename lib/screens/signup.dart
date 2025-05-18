@@ -22,6 +22,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
+  String? _errorMessage;
 
   // 로딩 상태
   bool _isLoading = false;
@@ -107,85 +108,36 @@ class _SignupScreenState extends State<SignupScreen> {
     return isValid;
   }
 
-  // 회원가입 요청 함수
-  Future<void> _signup() async {
-    // 입력값 검증
-    if (!_validateInputs()) {
-      return;
+  bool _validatePassword(String password) {
+    // 비밀번호 길이 검사 (8-20자)
+    if (password.length < 8 || password.length > 20) {
+      return false;
     }
 
-    // 로딩 시작
-    setState(() {
-      _isLoading = true;
-    });
+    // 영문, 숫자, 특수문자 포함 여부 검사
+    bool hasLetter = password.contains(RegExp(r'[a-zA-Z]'));
+    bool hasDigit = password.contains(RegExp(r'[0-9]'));
+    bool hasSpecial = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
+    return hasLetter && hasDigit && hasSpecial;
+  }
+
+  Future<bool> _checkEmailDuplicate(String email) async {
     try {
-      // 백엔드 API URL (실제 URL로 변경 필요)
-      final url = Uri.parse('${getServerUrl()}/signup');
-
-      // 요청 데이터 준비
-      final requestData = {
-        'username': _usernameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'password': _passwordController.text,
-      };
-
-      // POST 요청 보내기
       final response = await http.post(
-        url,
+        Uri.parse('${getServerUrl()}/auth/check-email'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestData),
+        body: jsonEncode({'email': email}),
       );
 
-      // 응답 처리
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // 회원가입 성공
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('회원가입이 완료되었습니다. 로그인해주세요.'),
-            backgroundColor: Color(0xFFA0CC71),
-          ),
-        );
-
-        // 로그인 화면으로 이동
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-      } else {
-        // 회원가입 실패
-        final responseData = jsonDecode(response.body);
-        String errorMessage = responseData['message'] ?? '회원가입에 실패했습니다.';
-
-        // 에러 메시지에 따라 처리 (이메일 중복 등)
-        if (errorMessage.contains('email') || errorMessage.toLowerCase().contains('duplicate')) {
-          setState(() {
-            _emailError = '이미 사용 중인 이메일입니다';
-          });
-        } else {
-          // 일반 에러 메시지 표시
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['isAvailable'] ?? false;
       }
+      return false;
     } catch (e) {
-      // 네트워크 오류 등의 예외 처리
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('서버 연결에 실패했습니다. 다시 시도해주세요.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      print('회원가입 오류: $e');
-    } finally {
-      // 로딩 종료
-      setState(() {
-        _isLoading = false;
-      });
+      print('이메일 중복 확인 오류: $e');
+      return false;
     }
   }
 
@@ -193,69 +145,162 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: CommonAppBar(
         title: '회원가입',
         onBackPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-          );
+          Navigator.pop(context);
         },
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.08,
-            vertical: screenHeight * 0.04,
-          ),
+          padding: EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 로고 이미지
-              Center(
-                child: Image.asset(
-                  "assets/title.png",
-                  width: screenWidth * 0.6,
-                  height: screenHeight * 0.15,
-                  fit: BoxFit.contain,
+              // 이름 입력 필드
+              TextField(
+                controller: _usernameController,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: '이름',
+                  labelStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                  errorText: _nameError,
+                  errorStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: colorScheme.primary),
+                  ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.04),
+              SizedBox(height: 20),
 
-              // 입력 필드
-              _buildTextFields(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
+              // 이메일 입력 필드
+              TextField(
+                controller: _emailController,
+                style: theme.textTheme.bodyLarge,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: '이메일',
+                  labelStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                  errorText: _emailError,
+                  errorStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: colorScheme.primary),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // 비밀번호 입력 필드
+              TextField(
+                controller: _passwordController,
+                style: theme.textTheme.bodyLarge,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: '비밀번호',
+                  labelStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                  errorText: _passwordError,
+                  errorStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: colorScheme.primary),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // 비밀번호 확인 입력 필드
+              TextField(
+                controller: _confirmPasswordController,
+                style: theme.textTheme.bodyLarge,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: '비밀번호 확인',
+                  labelStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                  errorText: _confirmPasswordError,
+                  errorStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: colorScheme.primary),
+                  ),
+                ),
+              ),
+              SizedBox(height: 30),
 
               // 회원가입 버튼
               SizedBox(
-                width: screenWidth * 0.8,
-                child: AspectRatio(
-                  aspectRatio: 8.7 / 1,
+                width: double.infinity,
+                height: screenHeight * 0.06,
                   child: ElevatedButton(
+                  onPressed: _isLoading ? null : _signup,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFA0CC71),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                    onPressed: _isLoading ? null : _signup, // 회원가입 함수 연결
+                  ),
                     child: _isLoading
-                        ? SizedBox(
-                      width: screenWidth * 0.03,
-                      height: screenWidth * 0.03,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
+                      ? CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                     )
                         : Text(
                       '회원가입',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.03,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onPrimary,
                     ),
                   ),
                 ),
@@ -267,89 +312,84 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildTextFields(double screenWidth, double screenHeight) {
-    // 입력 필드의 컨트롤러 및 에러 메시지
-    List<Map<String, dynamic>> fieldData = [
-      {
-        'controller': _usernameController,
-        'placeholder': '이름을 입력해주세요',
-        'iconPath': "assets/User_Icon.png",
-        'obscureText': false,
-        'error': _nameError,
-      },
-      {
-        'controller': _emailController,
-        'placeholder': '이메일을 입력해주세요',
-        'iconPath': "assets/Mail_Icon.png",
-        'obscureText': false,
-        'error': _emailError,
-      },
-      {
-        'controller': _passwordController,
-        'placeholder': '비밀번호를 입력해주세요',
-        'iconPath': "assets/Lock_Icon.png",
-        'obscureText': true,
-        'error': _passwordError,
-      },
-      {
-        'controller': _confirmPasswordController,
-        'placeholder': '비밀번호를 재입력 해주세요',
-        'iconPath': "assets/Lock_Icon.png",
-        'obscureText': true,
-        'error': _confirmPasswordError,
-      }
-    ];
+  // 회원가입 요청 함수
+  Future<void> _signup() async {
+    if (_emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty ||
+        _usernameController.text.isEmpty) {
+      setState(() {
+        _errorMessage = '모든 필드를 입력해주세요.';
+      });
+      return;
+    }
 
-    return Column(
-      children: List.generate(fieldData.length, (index) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: fieldData[index]['controller'],
-              style: TextStyle(fontSize: screenWidth * 0.035),
-              obscureText: fieldData[index]['obscureText'],
-              decoration: InputDecoration(
-                prefixIcon: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 15),
-                  width: screenWidth * 0.045,
-                  height: screenHeight * 0.015,
-                  child: Image.asset(
-                    fieldData[index]['iconPath'],
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                hintText: fieldData[index]['placeholder'],
-                hintStyle: TextStyle(
-                  fontSize: screenWidth * 0.032,
-                  color: Colors.grey[500],
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(50),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(50),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(50),
-                  borderSide: BorderSide(color: Color(0xFFA0CC71), width: 2),
-                ),
-                contentPadding: EdgeInsets.symmetric(vertical: 16),
-                errorText: fieldData[index]['error'],
-                errorStyle: TextStyle(
-                  color: Colors.red,
-                  fontSize: screenWidth * 0.03,
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.015),
-          ],
+    if (!_validatePassword(_passwordController.text)) {
+      setState(() {
+        _errorMessage = '비밀번호는 8-20자의 영문, 숫자, 특수문자를 포함해야 합니다.';
+      });
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = '비밀번호가 일치하지 않습니다.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      // 이메일 중복 확인
+      final isEmailAvailable = await _checkEmailDuplicate(_emailController.text);
+      if (!isEmailAvailable) {
+        setState(() {
+          _errorMessage = '이미 사용 중인 이메일입니다.';
+        });
+        return;
+      }
+
+      final url = Uri.parse('${getServerUrl()}/signup');
+      final requestData = {
+        'email': _emailController.text,
+        'password': _passwordController.text,
+        'username': _usernameController.text,
+      };
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestData),
+      );
+
+      if (response.statusCode == 201) {
+        // 회원가입 성공 시 로그인 화면으로 이동
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('회원가입이 완료되었습니다. 로그인해주세요.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
         );
-      }),
-    );
+      } else {
+        final responseData = jsonDecode(response.body);
+        setState(() {
+          _errorMessage = responseData['message'] ?? '회원가입에 실패했습니다.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = '서버 연결에 실패했습니다. 다시 시도해주세요.';
+      });
+      print('회원가입 오류: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }

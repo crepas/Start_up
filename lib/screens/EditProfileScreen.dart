@@ -138,6 +138,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
 // 성공 응답 처리 함수
   Future<void> _handleSuccessResponse(SharedPreferences prefs) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     // 로컬 저장소 업데이트
     await prefs.setString('username', _usernameController.text.trim());
     await prefs.setStringList('foodTypes', _selectedFoodTypes);
@@ -147,7 +150,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('프로필이 성공적으로 업데이트되었습니다.'),
-        backgroundColor: Colors.green,
+        backgroundColor: colorScheme.primary,
       ),
     );
 
@@ -168,201 +171,187 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // 에러 메시지 표시
   void _showErrorMessage(String message) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: colorScheme.error,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('프로필 편집'),
-        backgroundColor: Color(0xFFA0CC71),
-        foregroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              ),
+            )
           : SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 프로필 사진 (기능 미구현)
-            Center(
-              child: Stack(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.grey[200],
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.grey[400],
+                  // 프로필 사진 (기능 미구현)
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: theme.dividerColor,
+                          child: Icon(
+                            Icons.person,
+                            size: 50,
+                            color: theme.hintColor,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.camera_alt,
+                              size: 20,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Color(0xFFA0CC71),
-                        shape: BoxShape.circle,
+                  SizedBox(height: 24),
+                  // 사용자 이름 입력
+                  Text(
+                    '사용자 이름',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      hintText: '사용자 이름을 입력하세요',
+                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.hintColor,
                       ),
-                      padding: EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 18,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: theme.dividerColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: theme.dividerColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: colorScheme.primary),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  // 선호 음식 종류
+                  Text(
+                    '선호하는 음식 종류',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _availableFoodTypes.map((type) {
+                      final isSelected = _selectedFoodTypes.contains(type);
+                      return FilterChip(
+                        label: Text(type),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedFoodTypes.add(type);
+                            } else {
+                              _selectedFoodTypes.remove(type);
+                            }
+                          });
+                        },
+                        backgroundColor: theme.cardColor,
+                        selectedColor: colorScheme.primary.withOpacity(0.2),
+                        checkmarkColor: colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isSelected ? colorScheme.primary : theme.textTheme.bodyMedium?.color,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: 24),
+                  // 선호 가격대
+                  Text(
+                    '선호하는 가격대',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _priceRanges.map((range) {
+                      final isSelected = _selectedPriceRange == range;
+                      return ChoiceChip(
+                        label: Text(range),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedPriceRange = range;
+                            });
+                          }
+                        },
+                        backgroundColor: theme.cardColor,
+                        selectedColor: colorScheme.primary.withOpacity(0.2),
+                        labelStyle: TextStyle(
+                          color: isSelected ? colorScheme.primary : theme.textTheme.bodyMedium?.color,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: 32),
+                  // 저장 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _updateProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        '저장하기',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 24),
-
-            // 이메일 표시 (변경 불가)
-            Text(
-              '이메일',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8),
-            TextField(
-              readOnly: true,
-              decoration: InputDecoration(
-                hintText: widget.userInfo['email'],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[200],
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // 사용자 이름 입력
-            Text(
-              '사용자 이름',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8),
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(
-                hintText: '사용자 이름을 입력하세요',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFA0CC71), width: 2),
-                ),
-              ),
-            ),
-            SizedBox(height: 24),
-
-            // 선호하는 음식 종류
-            Text(
-              '선호하는 음식 종류',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _availableFoodTypes.map((foodType) {
-                final isSelected = _selectedFoodTypes.contains(foodType);
-                return FilterChip(
-                  label: Text(foodType),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedFoodTypes.add(foodType);
-                      } else {
-                        _selectedFoodTypes.remove(foodType);
-                      }
-                    });
-                  },
-                  selectedColor: Color(0xFFD2E6A9),
-                  checkmarkColor: Color(0xFFA0CC71),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 24),
-
-            // 선호하는 가격대
-            Text(
-              '선호하는 가격대',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: _priceRanges.map((range) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Row(
-                    children: [
-                      Radio<String>(
-                        value: range,
-                        groupValue: _selectedPriceRange,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedPriceRange = value!;
-                          });
-                        },
-                        activeColor: Color(0xFFA0CC71),
-                      ),
-                      Text(range),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 32),
-
-            // 저장 버튼
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _updateProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFA0CC71),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  '저장하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

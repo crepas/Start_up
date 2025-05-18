@@ -7,6 +7,10 @@ import '../widgets/Rt_image.dart';         // 식당 이미지 위젯
 import '../widgets/Rt_information.dart';   // 식당 정보 위젯
 import '../widgets/Rt_ReviewList.dart';    // 식당 리뷰 목록 위젯
 import '../models/restaurant.dart';        // 식당 데이터 모델
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../utils/api_config.dart';         // API 설정 파일 import
 
 /// 식당 목록 화면을 관리하는 StatefulWidget
 /// 
@@ -47,246 +51,93 @@ class _ListScreenState extends State<ListScreen> {
   int _currentIndex = 0;                          // 현재 선택된 하단 네비게이션 바 인덱스
   Set<int> _expandedIndices = {};                 // 현재 확장된 항목들의 인덱스 집합
   late List<Restaurant> restaurants;              // 식당 데이터 목록
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // 초기 데이터 로드
-    restaurants = _generateSampleRestaurants();
-    
-    // 카테고리 필터링 적용
-    if (widget.selectedCategory != null) {
-      restaurants = restaurants.where((restaurant) {
-        switch (widget.selectedCategory) {
-          case 'distance':
-            return true;  // TODO: 거리순 정렬 로직 구현 필요
-                    // - 현재 위치 기준으로 거리 계산
-                    // - 가까운 순서대로 정렬
-          case 'price':
-            return restaurant.priceRange == '중간';  // TODO: 가격대 필터링 로직 개선 필요
-                    // - 저렴/중간/고급 구분
-                    // - 가격대별 필터링 옵션 추가
-          case 'rating':
-            return restaurant.rating >= 4.0;  // TODO: 평점 기준 조정 필요
-                    // - 평점 기준을 사용자 설정으로 변경
-                    // - 평점 범위 설정 기능 추가
-          case 'category':
-            return restaurant.categoryName == '한식';  // TODO: 카테고리 필터링 로직 개선 필요
-                    // - 다중 카테고리 선택 지원
-                    // - 카테고리별 하위 분류 추가
-          default:
-            return true;
-        }
-      }).toList();
+    _loadRestaurants();
+  }
+
+  Future<void> _loadRestaurants() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final baseUrl = getServerUrl();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/restaurants'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          restaurants = (data['restaurants'] as List)
+              .map((item) => Restaurant.fromJson(item))
+              .toList();
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load restaurants');
+      }
+    } catch (e) {
+      print('식당 목록 로드 오류: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorSnackBar('식당 목록을 불러오는데 실패했습니다.');
     }
   }
 
-  /// 샘플 식당 데이터 생성 함수
-  /// 
-  /// 실제 서비스에서는 API를 통해 데이터를 가져와야 함
-  /// 
-  /// 반환값:
-  /// - List<Restaurant>: 식당 정보 목록
-  /// 
-  /// TODO:
-  /// - API 연동 구현
-  /// - 데이터 캐싱 구현
-  /// - 에러 처리 추가
-  List<Restaurant> _generateSampleRestaurants() {
-    return [
-      Restaurant(
-        id: '1',
-        name: '청진동',
-        address: '서울시 강남구',
-        roadAddress: '서울시 강남구 테헤란로 123',
-        lat: 37.5665,
-        lng: 126.9780,
-        categoryName: '한식',
-        foodTypes: ['한식', '분식'],
-        phone: '02-123-4567',
-        placeUrl: 'https://example.com',
-        priceRange: '중간',
-        rating: 4.5,
-        likes: 120,
-        reviews: [
-          Review(
-            username: '맛집탐험가',
-            comment: '정말 맛있었어요!',
-            rating: 4.5,
-            date: DateTime.now(),
-            images: [
-              'assets/food1.png',
-              'assets/food2.png',
-              'assets/food3.png',
-            ],
-          ),
-        ],
-        images: ['assets/rt1.png', 'assets/food1.png'],
-        isLiked: true,
-        isAd: true,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: true,
-        hasReservation: true,
-        hasWifi: true,
-        isPetFriendly: false,
-        reviewCount: 1,
-        createdAt: DateTime.now(),
+  void _applyFilters(Map<String, dynamic> filters) {
+    setState(() {
+      restaurants = restaurants.where((restaurant) {
+        bool matches = true;
+        
+        // 거리순 정렬
+        if (filters['sortBy'] == 'distance') {
+          // TODO: 현재 위치 기준으로 거리 계산 및 정렬
+        }
+        
+        // 가격대 필터링
+        if (filters['priceRange'] != null) {
+          matches = matches && restaurant.priceRange == filters['priceRange'];
+        }
+        
+        // 평점 필터링
+        if (filters['minRating'] != null) {
+          matches = matches && restaurant.rating >= filters['minRating'];
+        }
+        
+        // 카테고리 필터링
+        if (filters['categories'] != null && filters['categories'].isNotEmpty) {
+          matches = matches && filters['categories'].contains(restaurant.categoryName);
+        }
+        
+        return matches;
+      }).toList();
+    });
+  }
+
+  void _showErrorSnackBar(String message) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
       ),
-      Restaurant(
-        id: '2',
-        name: '강남 파스타',
-        address: '서울시 강남구',
-        roadAddress: '서울시 강남구 테헤란로 456',
-        lat: 37.5666,
-        lng: 126.9781,
-        categoryName: '양식',
-        foodTypes: ['파스타', '피자'],
-        phone: '02-234-5678',
-        placeUrl: 'https://example.com',
-        priceRange: '고급',
-        rating: 4.3,
-        likes: 85,
-        reviews: [
-          Review(
-            username: '파스타러버',
-            comment: '크림 파스타가 정말 맛있어요!',
-            rating: 4.3,
-            date: DateTime.now(),
-            images: [
-              'assets/food1.png',
-              'assets/food2.png',
-              'assets/food3.png',
-            ],
-          ),
-        ],
-        images: ['assets/food2.png', 'assets/food2.png'],
-        isLiked: false,
-        isAd: false,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-        hasReservation: true,
-        hasWifi: true,
-        isPetFriendly: false,
-        reviewCount: 1,
-        createdAt: DateTime.now(),
-      ),
-      Restaurant(
-        id: '3',
-        name: '용두동 마라샹궈',
-        address: '서울시 강남구',
-        roadAddress: '서울시 강남구 테헤란로 789',
-        lat: 37.5667,
-        lng: 126.9782,
-        categoryName: '중식',
-        foodTypes: ['중식', '마라샹궈'],
-        phone: '02-345-6789',
-        placeUrl: 'https://example.com',
-        priceRange: '중간',
-        rating: 4.7,
-        likes: 150,
-        reviews: [
-          Review(
-            username: '중식러버',
-            comment: '마라샹궈가 정말 맵고 맛있어요!',
-            rating: 4.7,
-            date: DateTime.now(),
-            images: [
-              'https://example.com/review3.png',
-              'https://example.com/review3.png',
-            ],
-          ),
-        ],
-        images: ['assets/food3.png', 'assets/food3.png'],
-        isLiked: true,
-        isAd: false,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: true,
-        hasReservation: false,
-        hasWifi: true,
-        isPetFriendly: false,
-        reviewCount: 1,
-        createdAt: DateTime.now(),
-      ),
-      Restaurant(
-        id: '4',
-        name: '스시코우지',
-        address: '서울시 강남구',
-        roadAddress: '서울시 강남구 테헤란로 101',
-        lat: 37.5668,
-        lng: 126.9783,
-        categoryName: '일식',
-        foodTypes: ['초밥', '회'],
-        phone: '02-456-7890',
-        placeUrl: 'https://example.com',
-        priceRange: '고급',
-        rating: 4.8,
-        likes: 200,
-        reviews: [
-          Review(
-            username: '스시매니아',
-            comment: '신선한 회와 초밥이 일품이에요!',
-            rating: 4.8,
-            date: DateTime.now(),
-            images: [
-              'https://example.com/review4.png',
-              'https://example.com/review4.png',
-            ],
-          ),
-        ],
-        images: ['assets/food4.png', 'assets/food4.png'],
-        isLiked: true,
-        isAd: false,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-        hasReservation: true,
-        hasWifi: true,
-        isPetFriendly: false,
-        reviewCount: 1,
-        createdAt: DateTime.now(),
-      ),
-      Restaurant(
-        id: '5',
-        name: '카페 드 파리',
-        address: '서울시 강남구',
-        roadAddress: '서울시 강남구 테헤란로 202',
-        lat: 37.5669,
-        lng: 126.9784,
-        categoryName: '카페/디저트',
-        foodTypes: ['커피', '디저트'],
-        phone: '02-567-8901',
-        placeUrl: 'https://example.com',
-        priceRange: '저렴',
-        rating: 4.2,
-        likes: 95,
-        reviews: [
-          Review(
-            username: '카페인러버',
-            comment: '분위기 좋고 커피도 맛있어요!',
-            rating: 4.2,
-            date: DateTime.now(),
-            images: [
-              'https://example.com/review5.png',
-              'https://example.com/review5.png',
-            ],
-          ),
-        ],
-        images: ['assets/food5.png', 'assets/food5.png'],
-        isLiked: false,
-        isAd: false,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: false,
-        hasReservation: false,
-        hasWifi: true,
-        isPetFriendly: true,
-        reviewCount: 1,
-        createdAt: DateTime.now(),
-      ),
-    ];
+    );
   }
 
   /// 항목 확장/축소 토글 함수
@@ -409,37 +260,237 @@ class _ListScreenState extends State<ListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final baseUnit = screenWidth / 360;  // 기준 단위 계산 (360dp 기준)
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
+      appBar: AppBar(
+        title: Text(
+          '맛집 목록',
+          style: theme.textTheme.titleLarge,
+        ),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // 필터 섹션
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: theme.cardColor,
+            child: Row(
           children: [
-            // 배너 이미지
-            _buildBannerImage(screenWidth, baseUnit),
-
-            // 필터
-            Filter(
-              initialFilter: widget.selectedCategory,
+                Expanded(
+                  child: Filter(
+                    onFilterChanged: (filters) {
+                      _applyFilters(filters);
+                    },
+                  ),
+                ),
+              ],
+            ),
             ),
 
             // 식당 목록
             Expanded(
-              child: ListView.builder(
+            child: _isLoading
+                ? CircularProgressIndicator()
+                : ListView.builder(
                 itemCount: restaurants.length,
                 itemBuilder: (context, index) {
-                  return RepaintBoundary(  // 성능 최적화를 위한 RepaintBoundary
-                    child: _buildRestaurantItem(restaurants[index], index),
+                      final restaurant = restaurants[index];
+                      final isExpanded = _expandedIndices.contains(index);
+
+                      return Container(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.shadowColor.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // 식당 기본 정보
+                            ListTile(
+                              contentPadding: EdgeInsets.all(16),
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.asset(
+                                  restaurant.images.first,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: theme.cardColor,
+                                      child: Icon(Icons.restaurant, color: colorScheme.primary),
+                                    );
+                                  },
+                                ),
+                              ),
+                              title: Text(
+                                restaurant.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: 4),
+                                  Text(
+                                    restaurant.categoryName,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.secondary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.star,
+                                        size: 16,
+                                        color: colorScheme.primary,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        restaurant.rating.toString(),
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        '(${restaurant.reviewCount})',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.secondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(
+                                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                                  color: colorScheme.primary,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    if (isExpanded) {
+                                      _expandedIndices.remove(index);
+                                    } else {
+                                      _expandedIndices.add(index);
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+
+                            // 확장된 상세 정보
+                            if (isExpanded)
+                              Container(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Divider(color: theme.dividerColor),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      '영업 정보',
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        _buildInfoChip(
+                                          icon: Icons.access_time,
+                                          label: restaurant.isOpen ? '영업중' : '영업종료',
+                                          color: restaurant.isOpen ? colorScheme.primary : colorScheme.error,
+                                          theme: theme,
+                                        ),
+                                        SizedBox(width: 8),
+                                        if (restaurant.hasParking)
+                                          _buildInfoChip(
+                                            icon: Icons.local_parking,
+                                            label: '주차',
+                                            color: colorScheme.primary,
+                                            theme: theme,
+                                          ),
+                                        SizedBox(width: 8),
+                                        if (restaurant.hasDelivery)
+                                          _buildInfoChip(
+                                            icon: Icons.delivery_dining,
+                                            label: '배달',
+                                            color: colorScheme.primary,
+                                            theme: theme,
+                                          ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      '주소',
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      restaurant.roadAddress,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildActionButton(
+                                          icon: Icons.directions,
+                                          label: '길찾기',
+                                          onTap: () {
+                                            // 길찾기 기능 구현
+                                          },
+                                          theme: theme,
+                                          colorScheme: colorScheme,
+                                        ),
+                                        _buildActionButton(
+                                          icon: restaurant.isLiked ? Icons.favorite : Icons.favorite_border,
+                                          label: '찜하기',
+                                          onTap: () {
+                                            // 찜하기 기능 구현
+                                          },
+                                          theme: theme,
+                                          colorScheme: colorScheme,
+                                        ),
+                                        _buildActionButton(
+                                          icon: Icons.rate_review,
+                                          label: '리뷰',
+                                          onTap: () {
+                                            // 리뷰 기능 구현
+                                          },
+                                          theme: theme,
+                                          colorScheme: colorScheme,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                   );
                 },
               ),
             ),
           ],
         ),
-      ),
-      // 하단 네비게이션 바
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -447,6 +498,57 @@ class _ListScreenState extends State<ListScreen> {
             _currentIndex = index;
           });
         },
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary,
+            ),
+          ),
+        ],
       ),
     );
   }

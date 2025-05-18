@@ -310,6 +310,9 @@ class _MenuTabState extends State<MenuTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return SafeArea(
       child: Column(
         children: [
@@ -317,7 +320,7 @@ class _MenuTabState extends State<MenuTab> {
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -333,11 +336,11 @@ class _MenuTabState extends State<MenuTab> {
                     ? CircularProgressIndicator()
                     : CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: theme.cardColor,
                   child: Icon(
                     Icons.person,
                     size: 30,
-                    color: Colors.grey[400],
+                    color: theme.iconTheme.color,
                   ),
                 ),
                 SizedBox(width: 16),
@@ -348,17 +351,15 @@ class _MenuTabState extends State<MenuTab> {
                     children: [
                       Text(
                         _userInfo['username'] ?? '사용자',
-                        style: TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       SizedBox(height: 4),
                       Text(
                         _userInfo['email'] ?? '',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodySmall?.color,
                         ),
                       ),
                       if (_userInfo['preferences']['foodTypes'].isNotEmpty)
@@ -366,18 +367,15 @@ class _MenuTabState extends State<MenuTab> {
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             '선호 음식: ${_userInfo['preferences']['foodTypes'].join(', ')}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
+                            style: theme.textTheme.bodySmall,
                           ),
                         ),
                     ],
                   ),
                 ),
-                // 프로필 편집 버튼 - 수정된 부분
+                // 프로필 편집 버튼
                 IconButton(
-                  icon: Icon(Icons.edit, color: Color(0xFFA0CC71)),
+                  icon: Icon(Icons.edit, color: colorScheme.primary),
                   onPressed: _isLoading
                       ? null
                       : (_userInfo['username'] == '게스트'
@@ -398,6 +396,7 @@ class _MenuTabState extends State<MenuTab> {
           // 메뉴 목록
           Expanded(
             child: Material(
+              color: theme.scaffoldBackgroundColor,
               child: ListView.builder(
                 itemCount: _menuItems.length,
                 itemBuilder: (context, index) {
@@ -407,18 +406,18 @@ class _MenuTabState extends State<MenuTab> {
                   return ListTile(
                     leading: Icon(
                       item['icon'],
-                      color: isRed ? Colors.red : Colors.grey[700],
+                      color: isRed ? Colors.red : theme.iconTheme.color,
                     ),
                     title: Text(
                       item['title'],
-                      style: TextStyle(
-                        color: isRed ? Colors.red : Colors.black,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: isRed ? Colors.red : theme.textTheme.bodyLarge?.color,
                         fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     trailing: Icon(
                       Icons.chevron_right,
-                      color: Colors.grey[400],
+                      color: theme.iconTheme.color?.withOpacity(0.5),
                     ),
                     onTap: item['onTap'],
                   );
@@ -432,9 +431,8 @@ class _MenuTabState extends State<MenuTab> {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               '나루나루 앱 버전 1.0.0',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 12,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),

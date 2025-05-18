@@ -56,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 실제 백엔드 URL로 변경 필요
       final url = Uri.parse('${getServerUrl()}/login');
 
       final requestData = {
@@ -72,21 +71,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-
         final token = responseData['token'];
-        print('서버에서 받은 토큰: $token');
 
         final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('email', _emailController.text);
+        await prefs.setString('username', responseData['user']['username']);
 
-        prefs.setString('token', token);
-        prefs.setString('email', _emailController.text);
-        prefs.setString('username', responseData['user']['username']);
-
-        // 자동 로그인 체크 여부에 따라 이메일 저장
         if (_rememberMe) {
-          prefs.setString('savedEmail', _emailController.text);
+          await prefs.setString('savedEmail', _emailController.text);
         } else {
-          prefs.remove('savedEmail');
+          await prefs.remove('savedEmail');
         }
 
         Navigator.pushReplacement(
@@ -111,6 +106,52 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleKakaoLogin() async {
+    try {
+      if (await isKakaoTalkInstalled()) {
+        await UserApi.instance.loginWithKakaoTalk();
+      } else {
+        await UserApi.instance.loginWithKakaoAccount();
+      }
+      
+      final user = await UserApi.instance.me();
+      if (user != null) {
+        // 카카오 로그인 성공 시 서버에 토큰 전송
+        final response = await http.post(
+          Uri.parse('${getServerUrl()}/auth/kakao'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'kakaoId': user.id,
+            'email': user.kakaoAccount?.email,
+            'nickname': user.kakaoAccount?.profile?.nickname,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          final token = responseData['token'];
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
+          await prefs.setString('email', user.kakaoAccount?.email ?? '');
+          await prefs.setString('username', user.kakaoAccount?.profile?.nickname ?? '');
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen()),
+          );
+        } else {
+          throw Exception('Failed to login with Kakao');
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = '카카오 로그인에 실패했습니다. 다시 시도해주세요.';
+      });
+      print('카카오 로그인 오류: $e');
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -122,6 +163,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -154,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     TextField(
                       controller: _emailController,
-                      style: TextStyle(fontSize: screenWidth * 0.03),
+                      style: theme.textTheme.bodyLarge,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         prefixIcon: Padding(
@@ -169,21 +212,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         hintText: '이메일',
-                        hintStyle: TextStyle(
-                          fontSize: screenWidth * 0.03,
-                          color: Color(0xFFA4A4A4),
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.hintColor,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Color(0xFFA0CC71)),
+                          borderSide: BorderSide(color: colorScheme.primary),
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: screenHeight * 0.015),
                       ),
@@ -192,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: 20),
                     TextField(
                       controller: _passwordController,
-                      style: TextStyle(fontSize: screenWidth * 0.03),
+                      style: theme.textTheme.bodyLarge,
                       obscureText: true,
                       decoration: InputDecoration(
                         prefixIcon: Padding(
@@ -201,92 +243,110 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: screenWidth * 0.045,
                             height: screenHeight * 0.045,
                             child: Image.asset(
-                              'assets/Lock_Icon.png',
+                              'assets/Password_Icon.png',
                               fit: BoxFit.contain,
                             ),
                           ),
                         ),
                         hintText: '비밀번호',
-                        hintStyle: TextStyle(
-                          fontSize: screenWidth * 0.03,
-                          color: Color(0xFFA4A4A4),
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.hintColor,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Colors.grey),
+                          borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
-                          borderSide: BorderSide(color: Color(0xFFA0CC71)),
+                          borderSide: BorderSide(color: colorScheme.primary),
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: screenHeight * 0.015),
                       ),
                     ),
 
-                    // 자동 로그인 체크박스 추가
-                    Padding(
-                      padding: EdgeInsets.only(top: 8.0, left: 8.0),
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value!;
-                              });
-                            },
-                            activeColor: Color(0xFFA0CC71),
+                    // 자동 로그인 체크박스
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (value) {
+                            setState(() {
+                              _rememberMe = value ?? false;
+                            });
+                          },
+                          activeColor: colorScheme.primary,
+                        ),
+                        Text(
+                          '자동 로그인',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+
+                    // 에러 메시지
+                    if (_errorMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          _errorMessage,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.error,
                           ),
-                          Text(
-                            '자동 로그인',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              color: Color(0xFF666666),
-                            ),
+                        ),
+                      ),
+
+                    SizedBox(height: 20),
+
+                    // 로그인 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      height: screenHeight * 0.06,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
                           ),
-                        ],
+                        ),
+                        child: _isLoading
+                            ? CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                              )
+                            : Text(
+                                '로그인',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: colorScheme.onPrimary,
+                                ),
+                              ),
                       ),
                     ),
 
-                    // 에러 메시지 표시
-                    if (_errorMessage.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: Text(
-                          _errorMessage,
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: screenWidth * 0.03,
-                          ),
-                        ),
-                      ),
+                    SizedBox(height: 20),
 
-                    // 추가 링크: 비밀번호 찾기, 회원가입
-                    SizedBox(height: screenHeight * 0.03),
+                    // 소셜 로그인 버튼
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => FindPasswordScreen()),
-                            );
-                          },
-                          child: Text(
-                            '비밀번호 찾기',
-                            style: TextStyle(color: Color(0xFFA4A4A4), fontSize: screenWidth * 0.03),
-                          ),
+                        KakaoLoginButton(
+                          onPressed: _handleKakaoLogin,
                         ),
-                        SizedBox(width: screenWidth * 0.02),
-                        Text('|', style: TextStyle(color: Color(0xFFA4A4A4), fontSize: screenWidth * 0.03)),
-                        SizedBox(width: screenWidth * 0.02),
-                        GestureDetector(
-                          onTap: () {
+                      ],
+                    ),
+
+                    SizedBox(height: 20),
+
+                    // 회원가입 및 비밀번호 찾기 링크
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => SignupScreen()),
@@ -294,109 +354,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: Text(
                             '회원가입',
-                            style: TextStyle(color: Color(0xFFA4A4A4), fontSize: screenWidth * 0.03),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          ' | ',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => FindPasswordScreen()),
+                            );
+                          },
+                          child: Text(
+                            '비밀번호 찾기',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ),
                       ],
                     ),
-
-                    SizedBox(height: screenHeight * 0.03),
-
-                    SizedBox(
-                      width: screenWidth * 0.8,
-                      child: AspectRatio(
-                        aspectRatio: 8.7 / 1,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFA0CC71),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                          ),
-                          onPressed: _isLoading ? null : _login,
-                          child: _isLoading
-                              ? SizedBox(
-                            width: screenWidth * 0.03,
-                            height: screenWidth * 0.03,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                              : Text(
-                            '로그인',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.03,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.005),
-
-              SizedBox(height: 5),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Color(0xFFA4A4A4),
-                      thickness: 1,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Or',
-                      style: TextStyle(
-                        color: Color(0xFFA4A4A4),
-                        fontSize: screenWidth * 0.03,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Color(0xFFA4A4A4),
-                      thickness: 1,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.005),
-
-              // 카카오 로그인 버튼
-              Center(
-                child: KakaoLoginButton(
-                  onPressed: () async {
-                    try {
-                      final token = await UserApi.instance.loginWithKakaoAccount();
-
-                      // 카카오 로그인 성공 시 자동 로그인 정보 저장
-                      final prefs = await SharedPreferences.getInstance();
-                      prefs.setString('token', 'kakao_${token.accessToken}');
-
-                      // 사용자 정보 가져오기
-                      try {
-                        final user = await UserApi.instance.me();
-                        prefs.setString('email', user.kakaoAccount?.email ?? 'kakao_user@example.com');
-                        prefs.setString('username', user.kakaoAccount?.profile?.nickname ?? 'kakao_user');
-                      } catch (e) {
-                        print('카카오 사용자 정보 가져오기 실패: $e');
-                      }
-
-                      // 홈 화면으로 이동
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => MainScreen()),
-                      );
-                    } catch (error) {
-                      print('카카오 로그인 실패 $error');
-                    }
-                  },
                 ),
               ),
             ],

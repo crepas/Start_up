@@ -115,15 +115,27 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
   
   void _showLoginRequiredDialog() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('로그인 필요'),
-        content: Text('찜 목록을 보려면 로그인이 필요합니다.'),
+        title: Text(
+          '로그인 필요',
+          style: theme.textTheme.titleLarge,
+        ),
+        content: Text(
+          '찜 목록을 보려면 로그인이 필요합니다.',
+          style: theme.textTheme.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('확인'),
+            child: Text(
+              '확인',
+              style: TextStyle(color: colorScheme.primary),
+            ),
           ),
         ],
       ),
@@ -132,12 +144,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
       appBar: CommonAppBar(
         title: '찜 목록',
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              ),
+            )
           : _favorites.isEmpty
               ? Center(
                   child: Column(
@@ -146,22 +165,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       Icon(
                         Icons.favorite_border,
                         size: 80,
-                        color: Colors.grey[400],
+                        color: theme.hintColor,
                       ),
                       SizedBox(height: 16),
                       Text(
                         '찜한 가게가 없습니다',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey[600],
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.hintColor,
                         ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         '마음에 드는 가게를 찜해보세요!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.hintColor,
                         ),
                       ),
                     ],
@@ -174,12 +191,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     return Dismissible(
                       key: Key(item['id']),
                       background: Container(
-                        color: Colors.red,
+                        color: colorScheme.error,
                         alignment: Alignment.centerRight,
                         padding: EdgeInsets.only(right: 20),
                         child: Icon(
                           Icons.delete,
-                          color: Colors.white,
+                          color: colorScheme.onError,
                         ),
                       ),
                       direction: DismissDirection.endToStart,
@@ -191,6 +208,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           horizontal: 16,
                           vertical: 8,
                         ),
+                        color: theme.cardColor,
                         child: ListTile(
                           contentPadding: EdgeInsets.all(12),
                           leading: ClipRRect(
@@ -204,10 +222,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 return Container(
                                   width: 70,
                                   height: 70,
-                                  color: Colors.grey[300],
+                                  color: theme.dividerColor,
                                   child: Icon(
                                     Icons.restaurant,
-                                    color: Colors.grey[500],
+                                    color: theme.hintColor,
                                   ),
                                 );
                               },
@@ -215,9 +233,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           ),
                           title: Text(
                             item['name'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: theme.textTheme.titleMedium,
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,34 +241,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               SizedBox(height: 4),
                               Text(
                                 item['category'],
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.hintColor,
                                 ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                item['address'],
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 4),
                               Row(
                                 children: [
                                   Icon(
                                     Icons.star,
-                                    color: Colors.amber,
                                     size: 16,
+                                    color: colorScheme.primary,
                                   ),
                                   SizedBox(width: 4),
                                   Text(
                                     item['rating'].toString(),
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.hintColor,
                                     ),
                                   ),
                                 ],
@@ -260,20 +265,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             ],
                           ),
                           trailing: IconButton(
-                            icon: Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                            ),
-                            onPressed: () {
-                              _removeFavorite(item['id']);
-                            },
+                            icon: Icon(Icons.favorite),
+                            color: colorScheme.primary,
+                            onPressed: () => _removeFavorite(item['id']),
                           ),
-                          onTap: () {
-                            // 가게 상세 정보로 이동
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('가게 상세 페이지 준비 중입니다')),
-                            );
-                          },
                         ),
                       ),
                     );

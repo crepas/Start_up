@@ -20,6 +20,7 @@ import '../screens/favorites_Screen.dart';
 import '../widgets/ReviewInputWidget.dart';
 import 'screens/MainScreen.dart';
 import 'theme/light_theme.dart';
+import 'theme/dark_theme.dart';
 // 로그인 상태 체크를 위한 클래스
 class AuthCheck extends StatefulWidget {
   @override
@@ -83,15 +84,43 @@ void main() async {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  MyAppState createState() => MyAppState();
+}
+
+class MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDarkMode = prefs.getBool('darkMode') ?? false;
+    setState(() {
+      _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
+  void updateThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '나루나루',
       debugShowCheckedModeBanner: false,
-      theme: lightTheme,  // 라이트 테마
-      themeMode: ThemeMode.system,  // 시스템 설정에 따라 테마 전환
-      home: MenuTab(),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: _themeMode,
+      home: MainScreen(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

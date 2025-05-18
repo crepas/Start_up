@@ -60,6 +60,9 @@ class _MainScreenState extends State<MainScreen> {
 
   // 홈 탭 콘텐츠 빌드 (기존 첫 번째 코드의 UI 부분)
   Widget _buildHomeTabContent() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return SafeArea(
       child: Column(
         children: [
@@ -82,11 +85,11 @@ class _MainScreenState extends State<MainScreen> {
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 12.0),
-            color: Color(0xFFD2E6A9), // 연한 녹색 배경
+            color: colorScheme.secondary.withOpacity(0.3),
             child: Center(
               child: RichText(
                 text: TextSpan(
-                  style: TextStyle(color: Colors.black),
+                  style: theme.textTheme.bodyLarge,
                   children: [
                     TextSpan(text: '✨ '),
                     TextSpan(
@@ -118,13 +121,13 @@ class _MainScreenState extends State<MainScreen> {
                           height: 60,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey[300]!),
+                            color: theme.cardColor,
+                            border: Border.all(color: theme.dividerColor),
                           ),
                           child: Center(
                             child: Text(
                               _categories[index]['label'],
-                              style: TextStyle(
+                              style: theme.textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -141,7 +144,7 @@ class _MainScreenState extends State<MainScreen> {
           // 음식 목록 섹션들
           Expanded(
             child: ListView.builder(
-              itemCount: 3, // 3개의 섹션으로 나누기
+              itemCount: 3,
               itemBuilder: (context, sectionIndex) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,14 +154,13 @@ class _MainScreenState extends State<MainScreen> {
                       padding: const EdgeInsets.only(left: 16.0, top: 8.0),
                       child: Text(
                         _sectionTitles[sectionIndex],
-                        style: TextStyle(
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
                       ),
                     ),
 
-                    // 음식 카드 슬라이더 (ListView로 구현)
+                    // 음식 카드 슬라이더
                     Container(
                       height: 150,
                       child: ListView.builder(
@@ -176,7 +178,7 @@ class _MainScreenState extends State<MainScreen> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10.0),
                                     child: Container(
-                                      color: Colors.grey[300], // 이미지 로딩 전 배경색
+                                      color: theme.cardColor,
                                       child: Image.asset(
                                         _foodItems[index]['imageUrl'],
                                         fit: BoxFit.cover,
@@ -194,7 +196,7 @@ class _MainScreenState extends State<MainScreen> {
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
                                     _foodItems[index]['title'],
-                                    style: TextStyle(fontSize: 12.0),
+                                    style: theme.textTheme.bodySmall,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -217,6 +219,9 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
       // 바디에 동적으로 생성된 위젯 할당
       body: _getBodyWidget(),
@@ -244,7 +249,7 @@ class _MainScreenState extends State<MainScreen> {
             label: '메뉴',
           ),
         ],
-        selectedItemColor: Color(0xFFA0CC71),
+        selectedItemColor: colorScheme.primary,
       ),
     );
   }

@@ -149,13 +149,6 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
     }
   }
 
-  // 오류 메시지 표시
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
   // 리뷰 수정 페이지로 이동
   void _navigateToEditReview(Map<String, dynamic> review) {
     // 실제 구현 시 리뷰 수정 페이지로 이동
@@ -164,225 +157,30 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
     );
   }
 
-  // 리뷰 카드 위젯
-  Widget _buildReviewCard(Map<String, dynamic> review) {
-    final String restaurantName = review['restaurantName'] ?? '식당 이름 없음';
-    final int rating = review['rating'] ?? 0;
-    final String content = review['content'] ?? '내용 없음';
-    final String date = review['createdAt'] != null
-        ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
-        : '날짜 정보 없음';
-
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 식당 이름과 별점
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    restaurantName,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (index) => Padding(
-                    padding: EdgeInsets.only(left: 2),
-                    child: Icon(
-                      index < rating ? Icons.star : Icons.star_border,
-                      color: index < rating ? Colors.amber : Colors.grey,
-                      size: 20,
-                    ),
-                  )),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            // 리뷰 내용
-            Text(
-              content,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            // 날짜와 버튼
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    date,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      iconSize: 20,
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                      icon: Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => _navigateToEditReview(review),
-                    ),
-                    SizedBox(width: 8),
-                    IconButton(
-                      iconSize: 20,
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteReview(review['_id']),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 저장한 리뷰 카드 위젯
-  Widget _buildSavedReviewCard(Map<String, dynamic> review) {
-    final String restaurantName = review['restaurantName'] ?? '식당 이름 없음';
-    final String authorName = review['authorName'] ?? '작성자 정보 없음';
-    final int rating = review['rating'] ?? 0;
-    final String content = review['content'] ?? '내용 없음';
-    final String date = review['createdAt'] != null
-        ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
-        : '날짜 정보 없음';
-
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    restaurantName,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (index) => Icon(
-                    index < rating ? Icons.star : Icons.star_border,
-                    color: index < rating ? Colors.amber : Colors.grey,
-                    size: 20,
-                  )),
-                ),
-              ],
-            ),
-            SizedBox(height: 4),
-            Text(
-              '작성자: $authorName',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              content,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  date,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                IconButton(
-                  iconSize: 20,
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Icon(Icons.bookmark_remove, color: Colors.red),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('저장한 리뷰 삭제 기능은 준비 중입니다')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: CommonAppBar(
-        title: '리뷰 관리',
+      appBar: AppBar(
+        title: Text('리뷰 관리'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
       ),
       body: Column(
         children: [
           TabBar(
             controller: _tabController,
-            tabs: _tabs.map((String tab) => Tab(
-              text: tab,
-            )).toList(),
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFFA0CC71),
+            tabs: _tabs.map((String tab) => Tab(text: tab)).toList(),
+            labelColor: colorScheme.primary,
+            unselectedLabelColor: theme.textTheme.bodyLarge?.color,
           ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                // 작성한 리뷰 탭
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _myReviews.isEmpty
-                    ? Center(child: Text('작성한 리뷰가 없습니다'))
-                    : ListView.builder(
-                  padding: EdgeInsets.only(bottom: 80),
-                  itemCount: _myReviews.length,
-                  itemBuilder: (context, index) => _buildReviewCard(_myReviews[index]),
-                ),
-
-                // 저장한 리뷰 탭 (임시 데이터 표시용)
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : Center(child: Text('저장한 리뷰 기능은 준비 중입니다')),
+                _buildReviewList(_myReviews),
+                _buildReviewList(_savedReviews),
               ],
             ),
           ),
@@ -397,6 +195,134 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
         },
         backgroundColor: Color(0xFFA0CC71),
         child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildReviewList(List<Map<String, dynamic>> reviews) {
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+        ),
+      );
+    }
+
+    if (reviews.isEmpty) {
+      return Center(
+        child: Text(
+          '리뷰가 없습니다',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: reviews.length,
+      itemBuilder: (context, index) {
+        return _buildReviewCard(reviews[index]);
+      },
+    );
+  }
+
+  Widget _buildReviewCard(Map<String, dynamic> review) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    final String restaurantName = review['restaurantName'] ?? '식당 이름 없음';
+    final int rating = review['rating'] ?? 0;
+    final String content = review['content'] ?? '내용 없음';
+    final String date = review['createdAt'] != null
+        ? DateTime.parse(review['createdAt']).toString().substring(0, 10)
+        : '날짜 정보 없음';
+
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      elevation: 2,
+      color: theme.cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    restaurantName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Row(
+                  children: [
+                    Icon(Icons.star, color: colorScheme.primary, size: 20),
+                    SizedBox(width: 4),
+                    Text(
+                      rating.toString(),
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              content,
+              style: theme.textTheme.bodyMedium,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  date,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                ),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => _navigateToEditReview(review),
+                      child: Text(
+                        '수정',
+                        style: TextStyle(color: colorScheme.primary),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _deleteReview(review['_id']),
+                      child: Text(
+                        '삭제',
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.error,
       ),
     );
   }

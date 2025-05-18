@@ -127,15 +127,27 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
   }
 
   void _showLoginRequiredDialog() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('로그인 필요'),
-        content: Text('방문 기록을 보려면 로그인이 필요합니다.'),
+        title: Text(
+          '로그인 필요',
+          style: theme.textTheme.titleLarge,
+        ),
+        content: Text(
+          '방문 기록을 보려면 로그인이 필요합니다.',
+          style: theme.textTheme.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('확인'),
+            child: Text(
+              '확인',
+              style: TextStyle(color: colorScheme.primary),
+            ),
           ),
         ],
       ),
@@ -163,6 +175,9 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     Map<String, List<Map<String, dynamic>>> groupedVisits = {};
 
     // 방문 날짜별로 그룹화
@@ -179,177 +194,101 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
         title: '방문 기록',
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _visitHistory.isEmpty
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            SizedBox(height: 16),
-            Text(
-              '방문 기록이 없습니다',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '맛집을 방문하고 기록을 남겨보세요!',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-        itemCount: groupedVisits.keys.length,
-        itemBuilder: (context, index) {
-          String dateKey = groupedVisits.keys.elementAt(index);
-          List<Map<String, dynamic>> visits = groupedVisits[dateKey]!;
+            )
+          : _visitHistory.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.history,
+                        size: 80,
+                        color: theme.hintColor,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '방문 기록이 없습니다',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: groupedVisits.length,
+                  itemBuilder: (context, index) {
+                    String dateKey = groupedVisits.keys.elementAt(index);
+                    List<Map<String, dynamic>> visits = groupedVisits[dateKey]!;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 날짜 헤더
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  dateKey,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ),
-              // 해당 날짜의 방문 기록
-              ...visits.map((visit) => Dismissible(
-                key: Key(visit['id']),
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: EdgeInsets.only(right: 20),
-                  child: Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                  ),
-                ),
-                direction: DismissDirection.endToStart,
-                onDismissed: (direction) {
-                  _removeVisitHistory(visit['id']);
-                },
-                confirmDismiss: (direction) async {
-                  return await showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text('방문 기록 삭제'),
-                        content: Text('이 방문 기록을 삭제하시겠습니까?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: Text('삭제'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Card(
-                  margin: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(12),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        visit['imageUrl'],
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.grey[300],
-                            child: Icon(
-                              Icons.restaurant,
-                              color: Colors.grey[500],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    title: Text(
-                      visit['restaurantName'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Column(
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 4),
-                        Text(
-                          visit['category'],
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            dateKey,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          DateFormat('a h:mm', 'ko_KR').format(visit['visitDate']),
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                          ),
-                        ),
+                        ...visits.map((visit) => _buildVisitCard(visit)),
                       ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.rate_review_outlined,
-                            color: Color(0xFFA0CC71),
-                          ),
-                          onPressed: () {
-                            // 리뷰 작성 화면으로 이동
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('리뷰 작성 기능은 준비 중입니다')),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      // 가게 상세 정보로 이동
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('가게 상세 페이지 준비 중입니다')),
-                      );
-                    },
-                  ),
+                    );
+                  },
                 ),
-              )).toList(),
-            ],
-          );
-        },
+    );
+  }
+
+  Widget _buildVisitCard(Map<String, dynamic> visit) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      color: theme.cardColor,
+      child: ListTile(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(
+            visit['imageUrl'],
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 60,
+                height: 60,
+                color: theme.dividerColor,
+                child: Icon(
+                  Icons.restaurant,
+                  color: theme.hintColor,
+                ),
+              );
+            },
+          ),
+        ),
+        title: Text(
+          visit['restaurantName'],
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          visit['category'],
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
+          ),
+        ),
+        trailing: IconButton(
+          icon: Icon(Icons.delete_outline),
+          color: colorScheme.error,
+          onPressed: () => _removeVisitHistory(visit['id']),
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/TopAppbar.dart';
+import '../main.dart';
 
 class AppSettingsTab extends StatefulWidget {
   @override
@@ -134,9 +135,17 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
       // 로컬 저장소 업데이트
       final prefs = await SharedPreferences.getInstance();
       if (value is bool) {
-        prefs.setBool(key, value);
+        await prefs.setBool(key, value);
       } else if (value is String) {
-        prefs.setString(key, value);
+        await prefs.setString(key, value);
+      }
+      
+      // 다크 모드 설정이 변경된 경우 테마 업데이트
+      if (key == 'darkMode') {
+        final MyAppState? appState = context.findAncestorStateOfType<MyAppState>();
+        if (appState != null) {
+          appState.updateThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+        }
       }
       
       // 서버에 설정 업데이트 요청 (필요한 경우)

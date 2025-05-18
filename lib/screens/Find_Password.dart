@@ -42,11 +42,15 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
 
   // 에러 메시지 표시 함수
   void _showErrorMessage(String message) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         duration: Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.error,
       ),
     );
   }
@@ -88,11 +92,13 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
 
       if (response.statusCode == 200) {
         // 성공 메시지 표시
-        final responseBody = jsonDecode(response.body);
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(responseData['message']),
-            backgroundColor: Colors.green,
+            backgroundColor: colorScheme.primary,
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 5),
           ),
@@ -124,6 +130,8 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: CommonAppBar(
@@ -142,8 +150,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
           children: [
             Text(
               '이메일을 입력하시면\n비밀번호 재설정 링크를 보내드립니다.',
-              style: TextStyle(
-                fontSize: screenWidth * 0.04,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -151,7 +158,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              style: TextStyle(fontSize: screenWidth * 0.03),
+              style: theme.textTheme.bodyLarge,
               decoration: InputDecoration(
                 prefixIcon: Padding(
                   padding: EdgeInsets.only(left: 20, right: 10),
@@ -165,18 +172,20 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
                   ),
                 ),
                 hintText: '이메일',
-                hintStyle: TextStyle(fontSize: screenWidth * 0.03, color: Color(0xFFA4A4A4)),
+                hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.hintColor,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(100),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: theme.dividerColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(100),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: theme.dividerColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(100),
-                  borderSide: BorderSide(color: Color(0xFFA0CC71)),
+                  borderSide: BorderSide(color: colorScheme.primary),
                 ),
                 contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
@@ -187,7 +196,8 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
               height: screenHeight * 0.05,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFA0CC71),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(100),
                   ),
@@ -195,21 +205,19 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
                 onPressed: isLoading ? null : sendPasswordResetLink,
                 child: isLoading
                     ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Text(
-                  '비밀번호 재설정 링크 전송',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.03,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                        '비밀번호 재설정 링크 보내기',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
               ),
             ),
           ],
