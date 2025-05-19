@@ -193,6 +193,8 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: CommonAppBar(
@@ -234,29 +236,29 @@ class _SignupScreenState extends State<SignupScreen> {
                   aspectRatio: 8.7 / 1,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFA0CC71),
+                      backgroundColor: colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
                       ),
                     ),
-                    onPressed: _isLoading ? null : _signup, // 회원가입 함수 연결
+                    onPressed: _isLoading ? null : _signup,
                     child: _isLoading
                         ? SizedBox(
-                      width: screenWidth * 0.03,
-                      height: screenWidth * 0.03,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: screenWidth * 0.03,
+                            height: screenWidth * 0.03,
+                            child: CircularProgressIndicator(
+                              color: colorScheme.onPrimary,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : Text(
-                      '회원가입',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.03,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                            '회원가입',
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
+                              fontSize: screenWidth * 0.03,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -268,6 +270,9 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildTextFields(double screenWidth, double screenHeight) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     // 입력 필드의 컨트롤러 및 에러 메시지
     List<Map<String, dynamic>> fieldData = [
       {
@@ -307,41 +312,50 @@ class _SignupScreenState extends State<SignupScreen> {
           children: [
             TextField(
               controller: fieldData[index]['controller'],
-              style: TextStyle(fontSize: screenWidth * 0.035),
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
               obscureText: fieldData[index]['obscureText'],
               decoration: InputDecoration(
                 prefixIcon: Container(
                   margin: EdgeInsets.symmetric(horizontal: 15),
                   width: screenWidth * 0.045,
                   height: screenHeight * 0.015,
-                  child: Image.asset(
-                    fieldData[index]['iconPath'],
-                    fit: BoxFit.contain,
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      theme.iconTheme.color ?? theme.textTheme.bodyLarge?.color ?? Colors.black,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      fieldData[index]['iconPath'],
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 hintText: fieldData[index]['placeholder'],
                 hintStyle: TextStyle(
                   fontSize: screenWidth * 0.032,
-                  color: Colors.grey[500],
+                  color: theme.hintColor,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: theme.cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(50),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(50),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: theme.dividerColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(50),
-                  borderSide: BorderSide(color: Color(0xFFA0CC71), width: 2),
+                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
                 ),
                 contentPadding: EdgeInsets.symmetric(vertical: 16),
                 errorText: fieldData[index]['error'],
                 errorStyle: TextStyle(
-                  color: Colors.red,
+                  color: colorScheme.error,
                   fontSize: screenWidth * 0.03,
                 ),
               ),
