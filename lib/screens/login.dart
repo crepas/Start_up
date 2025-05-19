@@ -205,15 +205,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: SizedBox(
                             width: screenWidth * 0.045,
                             height: screenHeight * 0.045,
-                            child: ColorFiltered(
-                              colorFilter: ColorFilter.mode(
-                                theme.textTheme.bodyLarge?.color ?? Colors.black,
-                                BlendMode.srcIn,
-                              ),
-                              child: Image.asset(
-                                'assets/Mail_Icon.png',
-                                fit: BoxFit.contain,
-                              ),
+                            child: Image.asset(
+                              'assets/Mail_Icon.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -248,15 +242,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: SizedBox(
                             width: screenWidth * 0.045,
                             height: screenHeight * 0.045,
-                            child: ColorFiltered(
-                              colorFilter: ColorFilter.mode(
-                                theme.textTheme.bodyLarge?.color ?? Colors.black,
-                                BlendMode.srcIn,
-                              ),
-                              child: Image.asset(
-                                'assets/Lock_Icon.png',
-                                fit: BoxFit.contain,
-                              ),
+                            child: Image.asset(
+                              'assets/Lock_Icon.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),

@@ -324,7 +324,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   height: screenHeight * 0.015,
                   child: ColorFiltered(
                     colorFilter: ColorFilter.mode(
-                      theme.textTheme.bodyLarge?.color ?? Colors.black,
+                      theme.iconTheme.color ?? theme.textTheme.bodyLarge?.color ?? Colors.black,
                       BlendMode.srcIn,
                     ),
                     child: Image.asset(
