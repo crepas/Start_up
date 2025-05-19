@@ -8,23 +8,25 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppBar(
       title: Text(
         title,
         style: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.04,
           fontWeight: FontWeight.w400,
+          color: theme.appBarTheme.foregroundColor,
         ),
       ),
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      elevation: 0,
+      backgroundColor: theme.appBarTheme.backgroundColor,
+      foregroundColor: theme.appBarTheme.foregroundColor,
+      elevation: theme.appBarTheme.elevation,
       toolbarHeight: MediaQuery.of(context).size.height * 0.07,
       leading: onBackPressed != null
           ? IconButton(
-        icon: Icon(Icons.arrow_back),
-        onPressed: onBackPressed,
-      )
+              icon: Icon(Icons.arrow_back),
+              onPressed: onBackPressed,
+            )
           : null,
     );
   }

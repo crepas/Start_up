@@ -333,7 +333,7 @@ class _MapTabState extends State<MapTab> {
             right: 0,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              color: Colors.white.withOpacity(0.8),
+              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
               child: Row(
                 children: [
                   Text(
@@ -341,6 +341,7 @@ class _MapTabState extends State<MapTab> {
                     style: TextStyle(
                       fontSize: 18.0,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                   Spacer(),
@@ -368,8 +369,10 @@ class _MapTabState extends State<MapTab> {
             right: 16,
             bottom: 100,
             child: FloatingActionButton(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.center_focus_strong, color: Colors.black),
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              child: Icon(Icons.center_focus_strong, 
+                color: Theme.of(context).textTheme.bodyLarge?.color
+              ),
               onPressed: _moveToFixedLocation,
             ),
           ),
@@ -383,10 +386,10 @@ class _MapTabState extends State<MapTab> {
               height: 60,
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Theme.of(context).shadowColor.withOpacity(0.1),
                     spreadRadius: 1,
                     blurRadius: 10,
                     offset: Offset(0, -3),
