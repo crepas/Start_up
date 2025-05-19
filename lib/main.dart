@@ -17,6 +17,7 @@ import '../screens/EditProfileScreen.dart';
 import '../screens/ListScreen.dart';
 import '../widgets/Rt_ReviewList.dart';
 import '../screens/favorites_Screen.dart';
+import '../screens/signup.dart';
 import '../widgets/ReviewInputWidget.dart';
 import 'screens/MainScreen.dart';
 import 'theme/light_theme.dart';
@@ -120,7 +121,7 @@ class MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
-      home: MainScreen(),
+      home: AppSettingsTab(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

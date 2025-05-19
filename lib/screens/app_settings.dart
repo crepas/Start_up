@@ -23,22 +23,6 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
     'termsOfService': '서비스 이용약관 버전 1.0',
   };
 
-  // 스위치 스타일 정의
-  final _switchTheme = SwitchThemeData(
-    thumbColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-      if (states.contains(MaterialState.selected)) {
-        return Color(0xFFA0CC71);
-      }
-      return Color(0xFF9A9C98);
-    }),
-    trackColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-      if (states.contains(MaterialState.selected)) {
-        return Color(0xFFA0CC71).withOpacity(0.5);
-      }
-      return Color(0xFF9A9C98).withOpacity(0.5);
-    }),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -197,7 +181,7 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
                 return ListTile(
                   title: Text(languages[index]),
                   trailing: languages[index] == _settings['language']
-                      ? Icon(Icons.check, color: Color(0xFFA0CC71))
+                      ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                       : null,
                   onTap: () {
                     Navigator.of(context).pop(languages[index]);
@@ -249,7 +233,7 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
                 return ListTile(
                   title: Text(unitName),
                   trailing: units[index] == _settings['distanceUnit']
-                      ? Icon(Icons.check, color: Color(0xFFA0CC71))
+                      ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                       : null,
                   onTap: () {
                     Navigator.of(context).pop(units[index]);
@@ -307,7 +291,7 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFA0CC71),
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
@@ -318,6 +302,22 @@ class _AppSettingsTabState extends State<AppSettingsTab> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
     }
+
+    // 스위치 스타일 정의
+    final _switchTheme = SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+        if (states.contains(MaterialState.selected)) {
+          return Theme.of(context).colorScheme.primary;
+        }
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
+      }),
+      trackColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+        if (states.contains(MaterialState.selected)) {
+          return Theme.of(context).colorScheme.primary.withOpacity(0.5);
+        }
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.3);
+      }),
+    );
 
     return Theme(
       data: Theme.of(context).copyWith(
