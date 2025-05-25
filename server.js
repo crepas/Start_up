@@ -13,7 +13,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const kakaoAuthRoutes = require('./routes/kakaoAuthRoutes');
-const passwordResetRoutes = require('./routes/passwordResetRoutes'); // 새로 추가
+const restaurantRoutes = require('./routes/restaurantRoutes');
+
 const app = express();
 
 // CORS 설정 추가 (앱에서 서버 접근 허용)
@@ -49,7 +50,7 @@ app.use('/', userRoutes);
 app.use('/', pageRoutes);
 // 라우트 등록
 app.use('/', kakaoAuthRoutes);
-app.use('/', passwordResetRoutes); // 비밀번호 재설정 라우트 추가
+app.use('/', restaurantRoutes);
 
 // 서버 시작
 const PORT = process.env.PORT || 8081;
