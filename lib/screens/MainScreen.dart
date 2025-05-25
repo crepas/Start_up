@@ -3,20 +3,31 @@ import 'HomeTab.dart';
 import 'MapTab.dart';
 import 'MenuTab.dart';
 import 'ListScreen.dart';
+import '../models/restaurant.dart';
 
 class MainScreen extends StatefulWidget {
+  final int initialTab; // 초기 탭 설정 추가
+  final Restaurant? selectedRestaurant; // 선택된 음식점 정보
+
+  const MainScreen({
+    Key? key,
+    this.initialTab = 0, // 기본값은 0 (홈 탭)
+    this.selectedRestaurant,
+  }) : super(key: key);
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   final List<Map<String, dynamic>> _categories = [
     {'id': 'distance', 'label': '거리'},
     {'id': 'price', 'label': '가격'},
     {'id': 'rating', 'label': '평점'},
     {'id': 'category', 'label': '카테고리'},
   ];
+
   // 음식 데이터 모델 (나중에 API 연결 시 대체될 예정)
   final List<Map<String, dynamic>> _foodItems = [
     {
@@ -34,6 +45,12 @@ class _MainScreenState extends State<MainScreen> {
   ];
   final List<String> _sectionTitles = ['#고기', '#분식', '#카페'];
 
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab; // 초기 탭 설정
+  }
+
   // 카테고리 선택 시 ListScreen으로 이동
   void _navigateToListScreen(String category) {
     Navigator.push(
@@ -50,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return _buildHomeTabContent();
       case 1:
-        return MapTab();
+        return MapTab(selectedRestaurant: widget.selectedRestaurant); // 음식점 정보 전달
       case 2:
         return MenuTab();
       default:
@@ -62,7 +79,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildHomeTabContent() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return SafeArea(
       child: Column(
         children: [
@@ -221,7 +238,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       // 바디에 동적으로 생성된 위젯 할당
       body: _getBodyWidget(),

@@ -7,8 +7,16 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/restaurant.dart';
 
 class MapTab extends StatefulWidget {
+  final Restaurant? selectedRestaurant; // 이 줄 추가
+
+  const MapTab({
+    Key? key,
+    this.selectedRestaurant, // 이 줄 추가
+  }) : super(key: key);
+
   @override
   _MapTabState createState() => _MapTabState();
 }
@@ -21,8 +29,8 @@ class _MapTabState extends State<MapTab> {
   bool _isLoadingRestaurants = false;
 
   // 고정된 위치 좌표 (인천 용현동 근처)
-  final double fixedLat = 37.4516;
-  final double fixedLng = 126.7015;
+  final double fixedLat = 37.4516;  // 기존: 37.4516
+  final double fixedLng = 126.7015; // 기존: 126.7015
 
   // 카카오 API에서 받아온 음식점 데이터를 저장할 리스트
   List<Map<String, dynamic>> _restaurants = [];
@@ -322,6 +330,20 @@ class _MapTabState extends State<MapTab> {
 
               // 지도가 준비되면 맛집 마커 추가
               await _addRestaurantMarkers();
+
+              // 선택된 음식점이 있으면 해당 위치로 이동
+              if (widget.selectedRestaurant != null) {
+                await _mapController!.updateCamera(
+                  NCameraUpdate.withParams(
+                    target: NLatLng(
+                        widget.selectedRestaurant!.lat,
+                        widget.selectedRestaurant!.lng
+                    ),
+                    zoom: 16,
+                  ),
+                );
+              }
+
               log("지도가 준비되었습니다", name: "MapTab");
             },
           ),
