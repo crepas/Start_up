@@ -97,7 +97,8 @@ const restaurantSchema = new mongoose.Schema({
 // 다음 위치를 찾기 위한 카테고리 기반 추천을 위한 인덱스
 restaurantSchema.index({ categoryName: 1 });
 restaurantSchema.index({ foodTypes: 1 });
-
+// 지리공간 인덱스 설정
+restaurantSchema.index({ location: '2dsphere' });
 const Restaurant = mongoose.model('Restaurant', restaurantSchema);
 
 module.exports = Restaurant;

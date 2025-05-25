@@ -63,7 +63,7 @@ async function fetchRestaurantsFromKakao(keyword, x, y, radius, page = 1) {
         x: x, // 경도
         y: y, // 위도
         radius: radius, // 반경(미터)
-        size: 45, // 최대 결과 수
+        size: 15, // 최대 결과 수
         page: page
       }
     });
@@ -141,7 +141,7 @@ async function importRestaurants() {
       let page = 1;
       let isEnd = false;
       
-      while (!isEnd && page <= 5) { // 최대 5페이지까지만
+      while (!isEnd && page <= 3) { // 최대 5페이지까지만
         console.log(`'${keyword}' 검색 - 페이지 ${page} 데이터 가져오는 중...`);
         
         const data = await fetchRestaurantsFromKakao(keyword, x, y, radius, page);
@@ -161,7 +161,7 @@ async function importRestaurants() {
         page++;
         
         // API 과부하 방지를 위한 지연
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
     
