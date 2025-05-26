@@ -37,6 +37,10 @@ class _ListScreenState extends State<ListScreen> {
   List<Restaurant> filteredRestaurants = [];
   bool _isLoading = false;
 
+  // 고정된 위치 좌표 (인천 용현동 근처) - MapTab과 동일하게 설정
+  final double fixedLat = 37.4516;
+  final double fixedLng = 126.7015;
+
   @override
   void initState() {
     super.initState();
@@ -53,11 +57,11 @@ class _ListScreenState extends State<ListScreen> {
       final token = prefs.getString('token');
       final baseUrl = getServerUrl();
 
-      // 현재 위치 기준으로 음식점 조회 (인천 용현동 좌표)
+      // MapTab과 동일한 방식으로 하이브리드 데이터 가져오기
       final queryParams = {
-        'lat': '37.4516',
-        'lng': '126.7015',
-        'radius': '5000',
+        'lat': fixedLat.toString(),
+        'lng': fixedLng.toString(),
+        'radius': '2000',
         'limit': '20',
         'sort': 'rating',
       };
@@ -85,13 +89,14 @@ class _ListScreenState extends State<ListScreen> {
         if (data['restaurants'] != null) {
           setState(() {
             restaurants = (data['restaurants'] as List)
-                .map((item) => Restaurant.fromJson(item))
+                .map((item) => _convertToRestaurant(item))
                 .toList();
             filteredRestaurants = List.from(restaurants);
             _isLoading = false;
           });
 
           print('로드된 음식점 수: ${restaurants.length}');
+          print('데이터 소스: ${data['source'] ?? 'unknown'}');
         } else {
           throw Exception('No restaurants data in response');
         }
@@ -108,6 +113,129 @@ class _ListScreenState extends State<ListScreen> {
       });
       _showErrorSnackBar('서버에서 데이터를 불러올 수 없어 샘플 데이터를 표시합니다.');
     }
+  }
+
+  // 서버 응답 데이터를 Restaurant 객체로 변환하는 함수
+  Restaurant _convertToRestaurant(Map<String, dynamic> item) {
+    try {
+      // 서버 응답이 이미 Restaurant 형태인 경우
+      if (item.containsKey('_id') || item.containsKey('id')) {
+        return Restaurant.fromJson(item);
+      }
+
+      // 카카오 API 형태의 데이터인 경우 변환
+      return Restaurant(
+        id: item['id']?.toString() ?? '',
+        name: item['name'] ?? item['place_name'] ?? '',
+        address: item['address'] ?? item['address_name'] ?? '',
+        roadAddress: item['roadAddress'] ?? item['road_address_name'] ?? '',
+        lat: _parseDouble(item['lat'] ?? item['y'] ?? 0),
+        lng: _parseDouble(item['lng'] ?? item['x'] ?? 0),
+        categoryName: item['categoryName'] ?? item['category_name'] ?? '',
+        foodTypes: _parseFoodTypes(item['foodTypes'] ?? []),
+        phone: item['phone'] ?? '',
+        placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
+        priceRange: item['priceRange'] ?? '중간',
+        rating: _parseDouble(item['rating'] ?? 0),
+        likes: _parseInt(item['likes'] ?? 0),
+        reviews: _parseReviews(item['reviews'] ?? []),
+        images: _parseImages(item['images'] ?? []),
+        createdAt: _parseDateTime(item['createdAt']),
+        reviewCount: _parseInt(item['reviewCount'] ?? 0),
+        isOpen: item['isOpen'] ?? true,
+        hasParking: item['hasParking'] ?? false,
+        hasDelivery: item['hasDelivery'] ?? false,
+        isAd: item['isAd'] ?? false,
+      );
+    } catch (e) {
+      print('데이터 변환 오류: $e');
+      print('문제가 된 데이터: $item');
+      return _createFallbackRestaurant(item);
+    }
+  }
+
+  // 안전한 파싱 함수들
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
+  }
+
+  List<String> _parseFoodTypes(dynamic value) {
+    if (value == null) return ['기타'];
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return ['기타'];
+  }
+
+  List<Review> _parseReviews(dynamic value) {
+    if (value == null || value is! List) return [];
+    try {
+      return (value as List)
+          .map((reviewData) => Review.fromJson(reviewData))
+          .toList();
+    } catch (e) {
+      print('리뷰 파싱 오류: $e');
+      return [];
+    }
+  }
+
+  List<String> _parseImages(dynamic value) {
+    if (value == null) return ['assets/restaurant.png'];
+    if (value is List) {
+      final images = value.map((e) => e.toString()).toList();
+      return images.isEmpty ? ['assets/restaurant.png'] : images;
+    }
+    return ['assets/restaurant.png'];
+  }
+
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  // 변환 실패 시 사용할 기본 Restaurant 객체 생성
+  Restaurant _createFallbackRestaurant(Map<String, dynamic> item) {
+    return Restaurant(
+      id: item['id']?.toString() ?? 'unknown',
+      name: item['name']?.toString() ?? item['place_name']?.toString() ?? '음식점',
+      address: item['address']?.toString() ?? item['address_name']?.toString() ?? '주소 정보 없음',
+      roadAddress: item['roadAddress']?.toString() ?? item['road_address_name']?.toString() ?? '',
+      lat: fixedLat,
+      lng: fixedLng,
+      categoryName: item['categoryName']?.toString() ?? item['category_name']?.toString() ?? '음식점',
+      foodTypes: ['기타'],
+      phone: item['phone']?.toString() ?? '',
+      placeUrl: item['placeUrl']?.toString() ?? item['place_url']?.toString() ?? '',
+      priceRange: '중간',
+      rating: 4.0,
+      likes: 50,
+      reviews: [],
+      images: ['assets/restaurant.png'],
+      createdAt: DateTime.now(),
+      reviewCount: 0,
+      isOpen: true,
+      hasParking: false,
+      hasDelivery: false,
+    );
   }
 
   List<Restaurant> _getDummyRestaurants() {
@@ -466,7 +594,7 @@ class _ListScreenState extends State<ListScreen> {
                                     MaterialPageRoute(
                                       builder: (context) => MainScreen(
                                         initialTab: 1,
-                                        selectedRestaurant: restaurant, // 음식점 정보 전달
+                                        selectedRestaurant: restaurant,
                                       ),
                                     ),
                                   );
