@@ -12,13 +12,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../utils/api_config.dart';
 import '../screens/MainScreen.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ListScreen extends StatefulWidget {
   final String? selectedCategory;
+  final String? searchKeyword; // 검색 키워드 추가
+  final List<Map<String, dynamic>>? searchResults; // 검색 결과 추가
 
   const ListScreen({
     Key? key,
     this.selectedCategory,
+    this.searchKeyword,
+    this.searchResults,
   }) : super(key: key);
 
   @override
@@ -37,14 +43,216 @@ class _ListScreenState extends State<ListScreen> {
   List<Restaurant> filteredRestaurants = [];
   bool _isLoading = false;
 
-  // 고정된 위치 좌표 (인천 용현동 근처) - MapTab과 동일하게 설정
-  final double fixedLat = 37.4516;
-  final double fixedLng = 126.7015;
+  // 검색 관련 변수 추가
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchMode = false;
+
+  // 현재 위치
+  double _currentLat = 37.4516;
+  double _currentLng = 126.7015;
 
   @override
   void initState() {
     super.initState();
-    _loadRestaurants();
+    _initScreen();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // 화면 초기화
+  Future<void> _initScreen() async {
+    // 현재 위치 가져오기
+    await _getCurrentLocation();
+
+    // 검색 결과가 있으면 검색 모드로 시작
+    if (widget.searchKeyword != null && widget.searchResults != null) {
+      _searchController.text = widget.searchKeyword!;
+      _isSearchMode = true;
+      _convertSearchResultsToRestaurants();
+    } else {
+      // 기본 음식점 목록 로드
+      _loadRestaurants();
+    }
+  }
+
+  // 현재 위치 가져오기
+  Future<void> _getCurrentLocation() async {
+    try {
+      PermissionStatus status = await Permission.location.request();
+
+      if (status.isGranted) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        );
+
+        setState(() {
+          _currentLat = position.latitude;
+          _currentLng = position.longitude;
+        });
+      }
+    } catch (e) {
+      print('위치 가져오기 오류: $e');
+    }
+  }
+
+  // 검색 결과를 Restaurant 객체로 변환
+  void _convertSearchResultsToRestaurants() {
+    if (widget.searchResults == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      restaurants = widget.searchResults!.map((searchResult) {
+        return Restaurant(
+          id: searchResult['id']?.toString() ?? '',
+          name: searchResult['place_name'] ?? '',
+          address: searchResult['address_name'] ?? '',
+          roadAddress: searchResult['road_address_name'] ?? '',
+          lat: _parseDouble(searchResult['y'] ?? 0),
+          lng: _parseDouble(searchResult['x'] ?? 0),
+          categoryName: searchResult['category_name'] ?? '',
+          foodTypes: _parseFoodTypesFromCategory(searchResult['category_name'] ?? ''),
+          phone: searchResult['phone'] ?? '',
+          placeUrl: searchResult['place_url'] ?? '',
+          priceRange: '중간',
+          rating: 4.0 + (searchResult['id'].hashCode % 10) / 10, // 임시 평점
+          likes: 50 + (searchResult['id'].hashCode % 100),
+          reviews: [],
+          images: [_getCategoryImage(searchResult['category_name'] ?? '')],
+          createdAt: DateTime.now(),
+          reviewCount: searchResult['id'].hashCode % 50,
+          isOpen: true,
+          hasParking: searchResult['id'].hashCode % 2 == 0,
+          hasDelivery: searchResult['id'].hashCode % 3 == 0,
+        );
+      }).toList();
+
+      filteredRestaurants = List.from(restaurants);
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('검색 결과 변환 오류: $e');
+      setState(() {
+        _isLoading = false;
+        restaurants = [];
+        filteredRestaurants = [];
+      });
+    }
+  }
+
+  // 카테고리에서 음식 타입 추출
+  List<String> _parseFoodTypesFromCategory(String category) {
+    List<String> parts = category.split(' > ');
+    if (parts.length > 1) {
+      return [parts[1]];
+    } else if (parts.isNotEmpty) {
+      return [parts[0]];
+    }
+    return ['기타'];
+  }
+
+  // 카테고리에 따른 이미지 반환
+  String _getCategoryImage(String category) {
+    if (category.contains('고기') || category.contains('삼겹살')) {
+      return 'assets/samgyupsal.png';
+    } else if (category.contains('갈비')) {
+      return 'assets/myung_jin.png';
+    } else if (category.contains('족발') || category.contains('보쌈')) {
+      return 'assets/onki.png';
+    } else if (category.contains('카페') || category.contains('커피')) {
+      return 'assets/cafe.png';
+    } else if (category.contains('중식')) {
+      return 'assets/chinese.png';
+    } else if (category.contains('일식')) {
+      return 'assets/japanese.png';
+    } else if (category.contains('분식')) {
+      return 'assets/bunsik.png';
+    } else {
+      return 'assets/restaurant.png';
+    }
+  }
+
+  // 새로운 검색 수행
+  Future<void> _performSearch(String keyword) async {
+    if (keyword.trim().isEmpty) {
+      // 검색어가 비어있으면 기본 목록으로 돌아감
+      setState(() {
+        _isSearchMode = false;
+      });
+      _loadRestaurants();
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _isSearchMode = true;
+    });
+
+    try {
+      final apiKey = '4e4572f409f9b0cd5dc1f574779a03a7';
+
+      final response = await http.get(
+        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=$keyword&x=$_currentLng&y=$_currentLat&radius=5000&size=30'),
+        headers: {
+          'Authorization': 'KakaoAK $apiKey',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> documents = data['documents'];
+
+        // 검색 결과를 Restaurant 객체로 변환
+        List<Restaurant> searchRestaurants = documents.map((doc) {
+          Map<String, dynamic> searchResult = doc as Map<String, dynamic>;
+          return Restaurant(
+            id: searchResult['id']?.toString() ?? '',
+            name: searchResult['place_name'] ?? '',
+            address: searchResult['address_name'] ?? '',
+            roadAddress: searchResult['road_address_name'] ?? '',
+            lat: _parseDouble(searchResult['y'] ?? 0),
+            lng: _parseDouble(searchResult['x'] ?? 0),
+            categoryName: searchResult['category_name'] ?? '',
+            foodTypes: _parseFoodTypesFromCategory(searchResult['category_name'] ?? ''),
+            phone: searchResult['phone'] ?? '',
+            placeUrl: searchResult['place_url'] ?? '',
+            priceRange: '중간',
+            rating: 4.0 + (searchResult['id'].hashCode % 10) / 10,
+            likes: 50 + (searchResult['id'].hashCode % 100),
+            reviews: [],
+            images: [_getCategoryImage(searchResult['category_name'] ?? '')],
+            createdAt: DateTime.now(),
+            reviewCount: searchResult['id'].hashCode % 50,
+            isOpen: true,
+            hasParking: searchResult['id'].hashCode % 2 == 0,
+            hasDelivery: searchResult['id'].hashCode % 3 == 0,
+          );
+        }).toList();
+
+        setState(() {
+          restaurants = searchRestaurants;
+          filteredRestaurants = List.from(restaurants);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('검색 API 오류: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('검색 오류: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorSnackBar('검색 중 오류가 발생했습니다.');
+    }
   }
 
   Future<void> _loadRestaurants() async {
@@ -59,8 +267,8 @@ class _ListScreenState extends State<ListScreen> {
 
       // MapTab과 동일한 방식으로 하이브리드 데이터 가져오기
       final queryParams = {
-        'lat': fixedLat.toString(),
-        'lng': fixedLng.toString(),
+        'lat': _currentLat.toString(),
+        'lng': _currentLng.toString(),
         'radius': '2000',
         'limit': '20',
         'sort': 'rating',
@@ -115,7 +323,7 @@ class _ListScreenState extends State<ListScreen> {
     }
   }
 
-  // 서버 응답 데이터를 Restaurant 객체로 변환하는 함수
+  // 서버 응답 데이터를 Restaurant 객체로 변환하는 함수 (기존 코드 유지)
   Restaurant _convertToRestaurant(Map<String, dynamic> item) {
     try {
       // 서버 응답이 이미 Restaurant 형태인 경우
@@ -154,7 +362,7 @@ class _ListScreenState extends State<ListScreen> {
     }
   }
 
-  // 안전한 파싱 함수들
+  // 안전한 파싱 함수들 (기존 코드 유지)
   double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -212,15 +420,15 @@ class _ListScreenState extends State<ListScreen> {
     return DateTime.now();
   }
 
-  // 변환 실패 시 사용할 기본 Restaurant 객체 생성
+  // 변환 실패 시 사용할 기본 Restaurant 객체 생성 (기존 코드 유지)
   Restaurant _createFallbackRestaurant(Map<String, dynamic> item) {
     return Restaurant(
       id: item['id']?.toString() ?? 'unknown',
       name: item['name']?.toString() ?? item['place_name']?.toString() ?? '음식점',
       address: item['address']?.toString() ?? item['address_name']?.toString() ?? '주소 정보 없음',
       roadAddress: item['roadAddress']?.toString() ?? item['road_address_name']?.toString() ?? '',
-      lat: fixedLat,
-      lng: fixedLng,
+      lat: _currentLat,
+      lng: _currentLng,
       categoryName: item['categoryName']?.toString() ?? item['category_name']?.toString() ?? '음식점',
       foodTypes: ['기타'],
       phone: item['phone']?.toString() ?? '',
@@ -486,7 +694,7 @@ class _ListScreenState extends State<ListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '맛집 목록',
+          _isSearchMode ? '검색 결과' : '맛집 목록',
           style: theme.textTheme.titleLarge,
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -494,6 +702,58 @@ class _ListScreenState extends State<ListScreen> {
       ),
       body: Column(
         children: [
+          // 검색 바 추가
+          Container(
+            padding: EdgeInsets.all(16),
+            color: theme.cardColor,
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '음식점이나 음식을 검색해보세요...',
+                prefixIcon: Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _isSearchMode = false;
+                    });
+                    _loadRestaurants();
+                  },
+                )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25.0),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
+              ),
+              onChanged: (value) {
+                setState(() {}); // suffixIcon을 위한 상태 업데이트
+              },
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  _performSearch(value.trim());
+                }
+              },
+            ),
+          ),
+
+          // 현재 검색 결과 정보 표시
+          if (_isSearchMode && _searchController.text.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                '"${_searchController.text}" 검색 결과 (${filteredRestaurants.length}개)',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
           // 필터 섹션
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -515,7 +775,7 @@ class _ListScreenState extends State<ListScreen> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    '맛집 정보를 불러오는 중...',
+                    _isSearchMode ? '검색 중...' : '맛집 정보를 불러오는 중...',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ],
@@ -527,20 +787,20 @@ class _ListScreenState extends State<ListScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.restaurant,
+                    _isSearchMode ? Icons.search_off : Icons.restaurant,
                     size: 80,
                     color: theme.hintColor,
                   ),
                   SizedBox(height: 16),
                   Text(
-                    '조건에 맞는 맛집이 없습니다',
+                    _isSearchMode ? '검색 결과가 없습니다' : '조건에 맞는 맛집이 없습니다',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.hintColor,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '필터 조건을 변경해보세요',
+                    _isSearchMode ? '다른 키워드로 검색해보세요' : '필터 조건을 변경해보세요',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -549,7 +809,9 @@ class _ListScreenState extends State<ListScreen> {
               ),
             )
                 : RefreshIndicator(
-              onRefresh: _loadRestaurants,
+              onRefresh: _isSearchMode
+                  ? () => _performSearch(_searchController.text)
+                  : _loadRestaurants,
               child: ListView.builder(
                 itemCount: filteredRestaurants.length,
                 itemBuilder: (context, index) {
