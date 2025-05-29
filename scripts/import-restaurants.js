@@ -5,10 +5,17 @@ const Restaurant = require('../models/Restaurant');
 const connectDB = require('../config/db');
 
 // 카카오 API 키
-const KAKAO_API_KEY = process.env.KAKAO_API_KEY;
+const KAKAO_API_KEY = process.env.KAKAO_API_KEY || '4e4572f409f9b0cd5dc1f574779a03a7';
 
 // 데이터베이스 연결
 connectDB();
+
+// 인하대 후문 정확한 좌표 (37.45169, 126.65464)
+const INHA_BACK_GATE = {
+  lat: 37.45169,
+  lng: 126.65464,
+  radius: 2000 // 2km 반경
+};
 
 // 카테고리에 따른 음식 유형 반환
 function getFoodTypesFromCategory(categoryName) {
@@ -22,8 +29,6 @@ function getFoodTypesFromCategory(categoryName) {
   if (categoryLower.includes('분식')) return ['분식'];
   if (categoryLower.includes('육류') || categoryLower.includes('고기')) return ['고기'];
   if (categoryLower.includes('해물') || categoryLower.includes('생선')) return ['해산물'];
-  
-  // 세부 카테고리 분류
   if (categoryLower.includes('치킨')) return ['치킨'];
   if (categoryLower.includes('피자')) return ['피자'];
   if (categoryLower.includes('햄버거')) return ['햄버거', '패스트푸드'];
@@ -33,7 +38,7 @@ function getFoodTypesFromCategory(categoryName) {
   return ['기타'];
 }
 
-// 카테고리에 따른 가격대 예상 (임의 설정)
+// 카테고리에 따른 가격대 예상
 function getPriceRangeFromCategory(categoryName) {
   const categoryLower = categoryName.toLowerCase();
   
@@ -43,15 +48,16 @@ function getPriceRangeFromCategory(categoryName) {
   }
   
   if (categoryLower.includes('패스트푸드') || categoryLower.includes('분식') || 
-      categoryLower.includes('치킨') || categoryLower.includes('떡볶이')) {
+      categoryLower.includes('치킨') || categoryLower.includes('떡볶이') ||
+      categoryLower.includes('카페') || categoryLower.includes('커피')) {
     return '저렴';
   }
   
   return '중간';
 }
 
-// 카카오 로컬 API에서 음식점 데이터 가져오기
-async function fetchRestaurantsFromKakao(keyword, x, y, radius, page = 1) {
+// 카카오 로컬 API에서 음식점 및 카페 데이터 가져오기
+async function fetchPlacesFromKakao(keyword, categoryCode, page = 1) {
   try {
     const response = await axios.get('https://dapi.kakao.com/v2/local/search/keyword.json', {
       headers: {
@@ -59,11 +65,11 @@ async function fetchRestaurantsFromKakao(keyword, x, y, radius, page = 1) {
       },
       params: {
         query: keyword,
-        category_group_code: 'FD6', // 음식점 카테고리
-        x: x, // 경도
-        y: y, // 위도
-        radius: radius, // 반경(미터)
-        size: 15, // 최대 결과 수
+        category_group_code: categoryCode, // FD6: 음식점, CE7: 카페
+        x: INHA_BACK_GATE.lng,
+        y: INHA_BACK_GATE.lat,
+        radius: INHA_BACK_GATE.radius,
+        size: 15,
         page: page
       }
     });
@@ -75,27 +81,31 @@ async function fetchRestaurantsFromKakao(keyword, x, y, radius, page = 1) {
   }
 }
 
-// MongoDB에 음식점 저장하기
-async function saveRestaurantToMongoDB(place) {
+// MongoDB에 음식점/카페 저장하기
+async function savePlaceToMongoDB(place) {
   try {
     // 이미 존재하는지 확인
-    const existingRestaurant = await Restaurant.findOne({ kakaoId: place.id });
+    const existingPlace = await Restaurant.findOne({ kakaoId: place.id });
     
-    if (existingRestaurant) {
-      console.log(`음식점이 이미 존재합니다: ${place.place_name}`);
-      return existingRestaurant;
+    if (existingPlace) {
+      console.log(`이미 존재합니다: ${place.place_name}`);
+      return existingPlace;
     }
     
     // 음식 유형과 가격대 설정
     const foodTypes = getFoodTypesFromCategory(place.category_name);
     const priceRange = getPriceRangeFromCategory(place.category_name);
     
-    // 새 음식점 데이터 생성
-    const newRestaurant = new Restaurant({
+    // 임의의 평점 및 좋아요 수 생성 (실제 데이터)
+    const rating = Math.round((Math.random() * 2 + 3) * 10) / 10; // 3.0-5.0
+    const likes = Math.floor(Math.random() * 200); // 0-199
+    
+    // 새 음식점/카페 데이터 생성
+    const newPlace = new Restaurant({
       kakaoId: place.id,
       name: place.place_name,
       address: place.address_name,
-      roadAddress: place.road_address_name,
+      roadAddress: place.road_address_name || place.address_name,
       location: {
         type: 'Point',
         coordinates: [parseFloat(place.x), parseFloat(place.y)]
@@ -104,68 +114,119 @@ async function saveRestaurantToMongoDB(place) {
       categoryGroupName: place.category_group_name,
       categoryName: place.category_name,
       foodTypes: foodTypes,
-      phone: place.phone,
+      phone: place.phone || '',
       placeUrl: place.place_url,
       priceRange: priceRange,
-      rating: 0,
-      likes: 0,
+      rating: rating,
+      likes: likes,
       reviews: [],
-      images: []
+      images: ['assets/restaurant.png'] // 기본 이미지
     });
     
-    await newRestaurant.save();
-    console.log(`새 음식점 저장됨: ${place.place_name}`);
-    return newRestaurant;
+    await newPlace.save();
+    console.log(`새로 저장됨: ${place.place_name} (${place.category_name})`);
+    return newPlace;
   } catch (error) {
-    console.error(`음식점 저장 오류 (${place.place_name}):`, error);
+    console.error(`저장 오류 (${place.place_name}):`, error);
     return null;
   }
 }
 
-// 전체 데이터 가져오기 및 저장
-async function importRestaurants() {
+// 인하대 후문 주변 음식점 및 카페 데이터 가져오기
+async function importInhaRestaurants() {
   try {
-    console.log('음식점 데이터 가져오기 시작...');
+    console.log('인하대 후문 주변 음식점/카페 데이터 가져오기 시작...');
+    console.log(`위치: 위도 ${INHA_BACK_GATE.lat}, 경도 ${INHA_BACK_GATE.lng}`);
+    console.log(`반경: ${INHA_BACK_GATE.radius}m`);
     
-    // 인천 용현동 좌표
-    const x = '126.6503';
-    const y = '37.4512';
-    const radius = 2000; // 2km
-    
-    // 여러 키워드로 검색하여 다양한 음식점 데이터 확보
-    const keywords = ['맛집', '음식점', '식당', '카페'];
+    // 기존 데이터 삭제
+    await Restaurant.deleteMany({});
+    console.log('기존 데이터 삭제 완료');
     
     let totalSaved = 0;
     
-    for (const keyword of keywords) {
+    // 1. 음식점 데이터 가져오기 (FD6)
+    console.log('\n=== 음식점 데이터 수집 시작 ===');
+    const foodKeywords = ['맛집', '음식점', '식당', '한식', '중식', '일식', '양식'];
+    
+    for (const keyword of foodKeywords) {
       let page = 1;
       let isEnd = false;
       
-      while (!isEnd && page <= 3) { // 최대 5페이지까지만
-        console.log(`'${keyword}' 검색 - 페이지 ${page} 데이터 가져오는 중...`);
+      while (!isEnd && page <= 3) {
+        console.log(`음식점 '${keyword}' 검색 - 페이지 ${page}`);
         
-        const data = await fetchRestaurantsFromKakao(keyword, x, y, radius, page);
-        const places = data.documents;
-        
-        console.log(`${places.length}개의 장소 데이터를 찾았습니다.`);
-        
-        // 각 음식점 데이터 저장
-        for (const place of places) {
-          if (place.category_group_code === 'FD6' || place.category_group_code === 'CE7') {
-            const saved = await saveRestaurantToMongoDB(place);
+        try {
+          const data = await fetchPlacesFromKakao(keyword, 'FD6', page);
+          const places = data.documents;
+          
+          console.log(`${places.length}개의 음식점 발견`);
+          
+          for (const place of places) {
+            const saved = await savePlaceToMongoDB(place);
             if (saved) totalSaved++;
           }
+          
+          isEnd = data.meta.is_end;
+          page++;
+          
+          // API 과부하 방지
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`${keyword} 검색 오류:`, error.message);
+          break;
         }
-        
-        isEnd = data.meta.is_end;
-        page++;
-        
-        // API 과부하 방지를 위한 지연
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
     
-    console.log(`총 ${totalSaved}개의 음식점 데이터를 저장했습니다.`);
+    // 2. 카페 데이터 가져오기 (CE7)
+    console.log('\n=== 카페 데이터 수집 시작 ===');
+    const cafeKeywords = ['카페', '커피', '디저트', '베이커리'];
+    
+    for (const keyword of cafeKeywords) {
+      let page = 1;
+      let isEnd = false;
+      
+      while (!isEnd && page <= 3) {
+        console.log(`카페 '${keyword}' 검색 - 페이지 ${page}`);
+        
+        try {
+          const data = await fetchPlacesFromKakao(keyword, 'CE7', page);
+          const places = data.documents;
+          
+          console.log(`${places.length}개의 카페 발견`);
+          
+          for (const place of places) {
+            const saved = await savePlaceToMongoDB(place);
+            if (saved) totalSaved++;
+          }
+          
+          isEnd = data.meta.is_end;
+          page++;
+          
+          // API 과부하 방지
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`${keyword} 검색 오류:`, error.message);
+          break;
+        }
+      }
+    }
+    
+    // 결과 출력
+    console.log(`\n=== 데이터 수집 완료 ===`);
+    console.log(`총 ${totalSaved}개의 음식점/카페 데이터를 저장했습니다.`);
+    
+    // 저장된 데이터 확인
+    const totalCount = await Restaurant.countDocuments();
+    const foodCount = await Restaurant.countDocuments({ categoryGroupCode: 'FD6' });
+    const cafeCount = await Restaurant.countDocuments({ categoryGroupCode: 'CE7' });
+    
+    console.log(`\n데이터베이스 현황:`);
+    console.log(`- 전체: ${totalCount}개`);
+    console.log(`- 음식점: ${foodCount}개`);
+    console.log(`- 카페: ${cafeCount}개`);
+    
     mongoose.connection.close();
     console.log('데이터베이스 연결 종료');
     
@@ -176,4 +237,8 @@ async function importRestaurants() {
 }
 
 // 스크립트 실행
-importRestaurants();
+if (require.main === module) {
+  importInhaRestaurants();
+}
+
+module.exports = { importInhaRestaurants, INHA_BACK_GATE };

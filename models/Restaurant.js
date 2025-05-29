@@ -34,10 +34,10 @@ const restaurantSchema = new mongoose.Schema({
   roadAddress: {
     type: String
   },
-  // 위치 정보 (GeoJSON 형식)
+  // 위치 정보 (GeoJSON 형식) - 인덱스는 여기서만 설정
   location: {
     type: pointSchema,
-    index: '2dsphere' // 지리적 인덱스 추가
+    index: '2dsphere' // 여기서만 인덱스 설정
   },
   // 카테고리 정보
   categoryGroupCode: String,
@@ -94,11 +94,14 @@ const restaurantSchema = new mongoose.Schema({
   }
 });
 
-// 다음 위치를 찾기 위한 카테고리 기반 추천을 위한 인덱스
+// 다른 인덱스들 (지리공간 인덱스 제외)
 restaurantSchema.index({ categoryName: 1 });
 restaurantSchema.index({ foodTypes: 1 });
-// 지리공간 인덱스 설정
-restaurantSchema.index({ location: '2dsphere' });
+restaurantSchema.index({ kakaoId: 1 });
+
+// 지리공간 인덱스는 이미 스키마에서 설정했으므로 여기서 중복 설정 제거
+// restaurantSchema.index({ location: '2dsphere' }); // 이 라인 제거
+
 const Restaurant = mongoose.model('Restaurant', restaurantSchema);
 
 module.exports = Restaurant;

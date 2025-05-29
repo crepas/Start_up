@@ -10,11 +10,11 @@ const KAKAO_API_KEY = process.env.KAKAO_API_KEY || '4e4572f409f9b0cd5dc1f574779a
 // 데이터베이스 연결
 connectDB();
 
-// 인하대 후문 정확한 좌표 (37.45169, 126.65464)
+// 인하대 후문 정확한 좌표 (37.4516, 126.7015)
 const INHA_BACK_GATE = {
-  lat: 37.45169,
-  lng: 126.65464,
-  radius: 2000 // 2km 반경
+  lat: 37.4516,
+  lng: 126.7015,
+  radius: 1500 // 1.5km 반경
 };
 
 // 카테고리에 따른 음식 유형 반환
@@ -139,9 +139,9 @@ async function importInhaRestaurants() {
     console.log(`위치: 위도 ${INHA_BACK_GATE.lat}, 경도 ${INHA_BACK_GATE.lng}`);
     console.log(`반경: ${INHA_BACK_GATE.radius}m`);
     
-    // 기존 데이터 삭제
-    await Restaurant.deleteMany({});
-    console.log('기존 데이터 삭제 완료');
+    // 기존 데이터 삭제 (선택사항)
+    // await Restaurant.deleteMany({});
+    // console.log('기존 데이터 삭제 완료');
     
     let totalSaved = 0;
     
