@@ -37,9 +37,9 @@ class _ListScreenState extends State<ListScreen> {
   List<Restaurant> filteredRestaurants = [];
   bool _isLoading = false;
 
-  // 고정된 위치 좌표 (인천 용현동 근처) - MapTab과 동일하게 설정
-  final double fixedLat = 37.4516;
-  final double fixedLng = 126.7015;
+  // 인하대 후문 정확한 좌표 (MapTab과 동일하게 설정)
+  final double inhaBackGateLat = 37.45169;
+  final double inhaBackGateLng = 126.65464;
 
   @override
   void initState() {
@@ -57,12 +57,12 @@ class _ListScreenState extends State<ListScreen> {
       final token = prefs.getString('token');
       final baseUrl = getServerUrl();
 
-      // MapTab과 동일한 방식으로 하이브리드 데이터 가져오기
+      // 인하대 후문 중심으로 데이터 요청
       final queryParams = {
-        'lat': fixedLat.toString(),
-        'lng': fixedLng.toString(),
-        'radius': '2000',
-        'limit': '20',
+        'lat': inhaBackGateLat.toString(),
+        'lng': inhaBackGateLng.toString(),
+        'radius': '2000', // 2km 반경
+        'limit': '50',
         'sort': 'rating',
       };
 
@@ -96,7 +96,7 @@ class _ListScreenState extends State<ListScreen> {
           });
 
           print('로드된 음식점 수: ${restaurants.length}');
-          print('데이터 소스: ${data['source'] ?? 'unknown'}');
+          print('데이터 소스: ${data['source'] ?? 'database'}');
         } else {
           throw Exception('No restaurants data in response');
         }
@@ -108,7 +108,7 @@ class _ListScreenState extends State<ListScreen> {
       setState(() {
         _isLoading = false;
         // 오류 발생 시 더미 데이터로 초기화
-        restaurants = _getDummyRestaurants();
+        restaurants = _getInhaDummyRestaurants();
         filteredRestaurants = List.from(restaurants);
       });
       _showErrorSnackBar('서버에서 데이터를 불러올 수 없어 샘플 데이터를 표시합니다.');
@@ -118,19 +118,28 @@ class _ListScreenState extends State<ListScreen> {
   // 서버 응답 데이터를 Restaurant 객체로 변환하는 함수
   Restaurant _convertToRestaurant(Map<String, dynamic> item) {
     try {
-      // 서버 응답이 이미 Restaurant 형태인 경우
-      if (item.containsKey('_id') || item.containsKey('id')) {
-        return Restaurant.fromJson(item);
+      // MongoDB location.coordinates 형식 처리
+      double lat = inhaBackGateLat; // 기본값
+      double lng = inhaBackGateLng; // 기본값
+
+      if (item['location'] != null && item['location']['coordinates'] != null) {
+        final coords = item['location']['coordinates'] as List;
+        if (coords.length >= 2) {
+          lng = _parseDouble(coords[0]); // 경도가 먼저
+          lat = _parseDouble(coords[1]); // 위도가 나중
+        }
+      } else if (item['lat'] != null && item['lng'] != null) {
+        lat = _parseDouble(item['lat']);
+        lng = _parseDouble(item['lng']);
       }
 
-      // 카카오 API 형태의 데이터인 경우 변환
       return Restaurant(
-        id: item['id']?.toString() ?? '',
-        name: item['name'] ?? item['place_name'] ?? '',
-        address: item['address'] ?? item['address_name'] ?? '',
+        id: item['_id'] ?? item['id'] ?? '',
+        name: item['name'] ?? '',
+        address: item['address'] ?? '',
         roadAddress: item['roadAddress'] ?? item['road_address_name'] ?? '',
-        lat: _parseDouble(item['lat'] ?? item['y'] ?? 0),
-        lng: _parseDouble(item['lng'] ?? item['x'] ?? 0),
+        lat: lat,
+        lng: lng,
         categoryName: item['categoryName'] ?? item['category_name'] ?? '',
         foodTypes: _parseFoodTypes(item['foodTypes'] ?? []),
         phone: item['phone'] ?? '',
@@ -215,16 +224,16 @@ class _ListScreenState extends State<ListScreen> {
   // 변환 실패 시 사용할 기본 Restaurant 객체 생성
   Restaurant _createFallbackRestaurant(Map<String, dynamic> item) {
     return Restaurant(
-      id: item['id']?.toString() ?? 'unknown',
-      name: item['name']?.toString() ?? item['place_name']?.toString() ?? '음식점',
-      address: item['address']?.toString() ?? item['address_name']?.toString() ?? '주소 정보 없음',
-      roadAddress: item['roadAddress']?.toString() ?? item['road_address_name']?.toString() ?? '',
-      lat: fixedLat,
-      lng: fixedLng,
-      categoryName: item['categoryName']?.toString() ?? item['category_name']?.toString() ?? '음식점',
+      id: item['_id']?.toString() ?? item['id']?.toString() ?? 'unknown',
+      name: item['name']?.toString() ?? '음식점',
+      address: item['address']?.toString() ?? '인하대 후문 근처',
+      roadAddress: item['roadAddress']?.toString() ?? '',
+      lat: inhaBackGateLat,
+      lng: inhaBackGateLng,
+      categoryName: item['categoryName']?.toString() ?? '음식점',
       foodTypes: ['기타'],
       phone: item['phone']?.toString() ?? '',
-      placeUrl: item['placeUrl']?.toString() ?? item['place_url']?.toString() ?? '',
+      placeUrl: item['placeUrl']?.toString() ?? '',
       priceRange: '중간',
       rating: 4.0,
       likes: 50,
@@ -238,103 +247,11 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  List<Restaurant> _getDummyRestaurants() {
+  // 인하대 후문 주변 더미 데이터
+  List<Restaurant> _getInhaDummyRestaurants() {
     return [
       Restaurant(
         id: '1',
-        name: '장터삼겹살',
-        address: '인천 미추홀구 용현동 618-1',
-        roadAddress: '인천 미추홀구 인하로 100',
-        lat: 37.4512,
-        lng: 126.7019,
-        categoryName: '음식점 > 한식 > 고기구이',
-        foodTypes: ['한식', '고기'],
-        phone: '032-123-4567',
-        placeUrl: '',
-        priceRange: '중간',
-        rating: 4.5,
-        likes: 120,
-        reviews: [
-          Review(
-            username: '맛집헌터',
-            comment: '삼겹살이 정말 맛있어요! 직원분들도 친절하고 분위기도 좋습니다.',
-            rating: 4.5,
-            date: DateTime.now().subtract(Duration(days: 2)),
-          ),
-          Review(
-            username: '용현동주민',
-            comment: '자주 가는 단골집입니다. 고기 질이 좋아요.',
-            rating: 4.0,
-            date: DateTime.now().subtract(Duration(days: 5)),
-          ),
-        ],
-        images: ['assets/samgyupsal.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        reviewCount: 2,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-      ),
-      Restaurant(
-        id: '2',
-        name: '명륜진사갈비',
-        address: '인천 미추홀구 용현동 621-5',
-        roadAddress: '인천 미추홀구 인하로 200',
-        lat: 37.4522,
-        lng: 126.7032,
-        categoryName: '음식점 > 한식 > 갈비',
-        foodTypes: ['한식', '갈비'],
-        phone: '032-123-4568',
-        placeUrl: '',
-        priceRange: '중간',
-        rating: 4.3,
-        likes: 89,
-        reviews: [
-          Review(
-            username: '갈비러버',
-            comment: '갈비가 부드럽고 양념이 맛있어요!',
-            rating: 4.5,
-            date: DateTime.now().subtract(Duration(days: 1)),
-          ),
-        ],
-        images: ['assets/myung_jin.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 45)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: true,
-      ),
-      Restaurant(
-        id: '3',
-        name: '온기족발',
-        address: '인천 미추홀구 용현동 615-2',
-        roadAddress: '인천 미추홀구 인하로 300',
-        lat: 37.4508,
-        lng: 126.7027,
-        categoryName: '음식점 > 한식 > 족발보쌈',
-        foodTypes: ['한식', '족발'],
-        phone: '032-123-4569',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.2,
-        likes: 76,
-        reviews: [
-          Review(
-            username: '족발좋아',
-            comment: '족발이 쫄깃하고 맛있어요. 가격도 합리적!',
-            rating: 4.2,
-            date: DateTime.now().subtract(Duration(days: 3)),
-          ),
-        ],
-        images: ['assets/onki.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 20)),
-        reviewCount: 1,
-        isOpen: false,
-        hasParking: true,
-        hasDelivery: true,
-      ),
-      Restaurant(
-        id: '4',
         name: '인하반점',
         address: '인천 미추홀구 용현동 산1-1',
         roadAddress: '인천 미추홀구 인하로 12',
@@ -361,26 +278,55 @@ class _ListScreenState extends State<ListScreen> {
         isOpen: true,
         hasParking: false,
         hasDelivery: true,
-        isAd: true, // 광고 표시
+        isAd: true,
       ),
       Restaurant(
-        id: '5',
-        name: '스타벅스 인하대점',
-        address: '인천 미추홀구 용현동 253',
+        id: '2',
+        name: '후문 삼겹살',
+        address: '인천 미추홀구 용현동 618-1',
         roadAddress: '인천 미추홀구 인하로 100',
-        lat: 37.4505,
-        lng: 126.7020,
-        categoryName: '음식점 > 카페 > 커피전문점',
-        foodTypes: ['카페', '커피'],
-        phone: '1522-3232',
+        lat: 37.4492,
+        lng: 126.7015,
+        categoryName: '음식점 > 한식 > 고기구이',
+        foodTypes: ['한식', '고기'],
+        phone: '032-123-4567',
         placeUrl: '',
         priceRange: '중간',
+        rating: 4.3,
+        likes: 76,
+        reviews: [
+          Review(
+            username: '고기사랑',
+            comment: '후문에서 가장 맛있는 삼겹살집!',
+            rating: 4.3,
+            date: DateTime.now().subtract(Duration(days: 2)),
+          ),
+        ],
+        images: ['assets/samgyupsal.png'],
+        createdAt: DateTime.now().subtract(Duration(days: 30)),
+        reviewCount: 1,
+        isOpen: true,
+        hasParking: true,
+        hasDelivery: false,
+      ),
+      Restaurant(
+        id: '3',
+        name: '후문카페',
+        address: '인천 미추홀구 용현동 253',
+        roadAddress: '인천 미추홀구 인하로 150',
+        lat: 37.4498,
+        lng: 126.7008,
+        categoryName: '음식점 > 카페 > 커피전문점',
+        foodTypes: ['카페', '커피'],
+        phone: '032-456-7890',
+        placeUrl: '',
+        priceRange: '저렴',
         rating: 4.0,
-        likes: 150,
+        likes: 120,
         reviews: [
           Review(
             username: '커피매니아',
-            comment: '공부하기 좋은 카페입니다. 와이파이도 잘 터져요.',
+            comment: '공부하기 좋은 카페. 후문에서 가장 넓어요.',
             rating: 4.0,
             date: DateTime.now().subtract(Duration(hours: 12)),
           ),
@@ -389,7 +335,7 @@ class _ListScreenState extends State<ListScreen> {
         createdAt: DateTime.now().subtract(Duration(days: 90)),
         reviewCount: 1,
         isOpen: true,
-        hasParking: true,
+        hasParking: false,
         hasDelivery: false,
         hasWifi: true,
       ),
@@ -406,7 +352,6 @@ class _ListScreenState extends State<ListScreen> {
           String filterRange = filters['priceRange'];
           String restaurantRange = restaurant.priceRange;
 
-          // 필터 매핑
           Map<String, String> priceMapping = {
             'low': '저렴',
             'medium': '중간',
@@ -448,7 +393,6 @@ class _ListScreenState extends State<ListScreen> {
           filteredRestaurants.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
           break;
         case 'distance':
-        // 거리순 정렬 (현재는 임의로 정렬)
           filteredRestaurants.sort((a, b) => a.name.compareTo(b.name));
           break;
       }
@@ -486,7 +430,7 @@ class _ListScreenState extends State<ListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '맛집 목록',
+          '인하대 후문 맛집',
           style: theme.textTheme.titleLarge,
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -515,7 +459,7 @@ class _ListScreenState extends State<ListScreen> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    '맛집 정보를 불러오는 중...',
+                    '인하대 후문 맛집 정보를 불러오는 중...',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ],

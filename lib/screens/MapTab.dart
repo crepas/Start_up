@@ -27,13 +27,13 @@ class _MapTabState extends State<MapTab> {
   NaverMapController? _mapController;
   bool _isLoading = true;
   bool _isLoadingRestaurants = false;
-  double _currentZoom = 14.0; // 현재 줌 레벨 추적
+  double _currentZoom = 14.0;
 
-  // 고정된 위치 좌표 (인천 용현동 근처)
-  final double fixedLat = 37.4516;
-  final double fixedLng = 126.7015;
+  // 인하대 후문 정확한 좌표 (인천 미추홀구 용현동)
+  final double inhaBackGateLat = 37.45169;
+  final double inhaBackGateLng = 126.65464;
 
-  // 서버에서 받아온 음식점 데이터를 저장할 리스트 (Map 형태로 단순화)
+  // 데이터베이스에서 받아온 음식점 데이터를 저장할 리스트
   List<Map<String, dynamic>> _restaurants = [];
 
   @override
@@ -41,12 +41,12 @@ class _MapTabState extends State<MapTab> {
     super.initState();
     _isLoading = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchRestaurantsFromServer();
+      _fetchRestaurantsFromDatabase();
     });
   }
 
-  // 서버에서 음식점 데이터 가져오기
-  Future<void> _fetchRestaurantsFromServer() async {
+  // 데이터베이스에서 음식점 데이터 가져오기
+  Future<void> _fetchRestaurantsFromDatabase() async {
     if (_isLoadingRestaurants) return;
 
     setState(() {
@@ -59,11 +59,11 @@ class _MapTabState extends State<MapTab> {
       final baseUrl = getServerUrl();
 
       final queryParams = {
-        'lat': fixedLat.toString(),
-        'lng': fixedLng.toString(),
-        'radius': '2000',
-        'limit': '20',
-        'sort': 'rating',
+        'lat': inhaBackGateLat.toString(),
+        'lng': inhaBackGateLng.toString(),
+        'radius': '2000', // 2km 반경
+        'limit': '50',
+        'sort': 'distance',
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
@@ -86,13 +86,12 @@ class _MapTabState extends State<MapTab> {
         final data = jsonDecode(response.body);
 
         if (data['restaurants'] != null) {
-          // 서버 데이터를 단순한 Map 형태로 저장 (Restaurant 객체 변환 안 함)
           setState(() {
             _restaurants = List<Map<String, dynamic>>.from(data['restaurants']);
             _isLoadingRestaurants = false;
           });
 
-          print('지도에서 로드된 음식점 수: ${_restaurants.length}');
+          print('지도에서 로드된 음식점 수: ${_restaurants.length}개');
 
           // 지도가 준비되면 마커 추가
           if (_mapController != null) {
@@ -102,93 +101,15 @@ class _MapTabState extends State<MapTab> {
           throw Exception('No restaurants data in response');
         }
       } else {
-        // 서버 오류 시 기본 데이터 사용
-        setState(() {
-          _isLoadingRestaurants = false;
-          _restaurants = _getDefaultRestaurants();
-        });
-
-        if (_mapController != null) {
-          await _addRestaurantMarkers();
-        }
+        throw Exception('Failed to load restaurants: ${response.statusCode}');
       }
     } catch (e) {
       print('음식점 데이터 가져오기 오류: $e');
       setState(() {
         _isLoadingRestaurants = false;
-        _restaurants = _getDefaultRestaurants();
       });
-
-      if (_mapController != null) {
-        await _addRestaurantMarkers();
-      }
+      _showErrorSnackBar('음식점 데이터를 불러올 수 없습니다.');
     }
-  }
-
-  // 기본 음식점 데이터 (Map 형태)
-  List<Map<String, dynamic>> _getDefaultRestaurants() {
-    return [
-      {
-        'id': '1',
-        'name': '장터삼겹살',
-        'address_name': '인천 미추홀구 용현동 618-1',
-        'category_name': '음식점 > 한식 > 고기구이',
-        'phone': '032-123-4567',
-        'y': '37.4512',
-        'x': '126.7019',
-        'place_url': '',
-        'rating': 4.5,
-        'likes': 120,
-      },
-      {
-        'id': '2',
-        'name': '명륜진사갈비',
-        'address_name': '인천 미추홀구 용현동 621-5',
-        'category_name': '음식점 > 한식 > 갈비',
-        'phone': '032-123-4568',
-        'y': '37.4522',
-        'x': '126.7032',
-        'place_url': '',
-        'rating': 4.3,
-        'likes': 89,
-      },
-      {
-        'id': '3',
-        'name': '온기족발',
-        'address_name': '인천 미추홀구 용현동 615-2',
-        'category_name': '음식점 > 한식 > 족발보쌈',
-        'phone': '032-123-4569',
-        'y': '37.4508',
-        'x': '126.7027',
-        'place_url': '',
-        'rating': 4.2,
-        'likes': 76,
-      },
-      {
-        'id': '4',
-        'name': '인하반점',
-        'address_name': '인천 미추홀구 용현동 산1-1',
-        'category_name': '음식점 > 중식 > 중화요리',
-        'phone': '032-867-0582',
-        'y': '37.4495',
-        'x': '126.7012',
-        'place_url': '',
-        'rating': 4.1,
-        'likes': 95,
-      },
-      {
-        'id': '5',
-        'name': '스타벅스 인하대점',
-        'address_name': '인천 미추홀구 용현동 253',
-        'category_name': '음식점 > 카페 > 커피전문점',
-        'phone': '1522-3232',
-        'y': '37.4505',
-        'x': '126.7020',
-        'place_url': '',
-        'rating': 4.0,
-        'likes': 150,
-      },
-    ];
   }
 
   // 좌표 안전하게 파싱하는 함수
@@ -202,7 +123,7 @@ class _MapTabState extends State<MapTab> {
     return 0.0;
   }
 
-  // 맛집 마커 추가 (단순한 Map 데이터 사용)
+  // 음식점 마커 추가
   Future<void> _addRestaurantMarkers() async {
     if (_mapController == null || _restaurants.isEmpty) return;
 
@@ -219,28 +140,21 @@ class _MapTabState extends State<MapTab> {
       final restaurant = _restaurants[i];
 
       try {
-        // 좌표 추출 (여러 방법 시도)
+        // 좌표 추출
         double lat = 0.0;
         double lng = 0.0;
 
-        // 방법 1: y, x 필드 (카카오 API 형식)
-        if (restaurant['y'] != null && restaurant['x'] != null) {
-          lat = _parseCoordinate(restaurant['y']);
-          lng = _parseCoordinate(restaurant['x']);
-        }
-        // 방법 2: lat, lng 필드
-        else if (restaurant['lat'] != null && restaurant['lng'] != null) {
-          lat = _parseCoordinate(restaurant['lat']);
-          lng = _parseCoordinate(restaurant['lng']);
-        }
-        // 방법 3: location.coordinates (MongoDB 형식)
-        else if (restaurant['location'] != null &&
+        // MongoDB location.coordinates 형식 또는 lat/lng 형식
+        if (restaurant['location'] != null &&
             restaurant['location']['coordinates'] != null) {
           final coords = restaurant['location']['coordinates'] as List;
           if (coords.length >= 2) {
-            lng = _parseCoordinate(coords[0]);
-            lat = _parseCoordinate(coords[1]);
+            lng = _parseCoordinate(coords[0]); // 경도가 먼저
+            lat = _parseCoordinate(coords[1]); // 위도가 나중
           }
+        } else if (restaurant['lat'] != null && restaurant['lng'] != null) {
+          lat = _parseCoordinate(restaurant['lat']);
+          lng = _parseCoordinate(restaurant['lng']);
         }
 
         // 좌표가 유효하지 않으면 스킵
@@ -251,9 +165,17 @@ class _MapTabState extends State<MapTab> {
 
         print('마커 추가: ${restaurant['name']} ($lat, $lng)');
 
+        // 마커 아이콘 설정 (카페와 음식점 구분)
+        String iconPath = 'assets/restaurant_marker.png';
+        if (restaurant['categoryGroupCode'] == 'CE7' ||
+            (restaurant['categoryName'] != null &&
+                restaurant['categoryName'].toString().contains('카페'))) {
+          iconPath = 'assets/cafe_marker.png';
+        }
+
         // 마커 생성
         final marker = NMarker(
-          id: 'restaurant_${restaurant['id']}_$i',
+          id: 'restaurant_${restaurant['_id'] ?? restaurant['id']}_$i',
           position: NLatLng(lat, lng),
         );
 
@@ -262,7 +184,7 @@ class _MapTabState extends State<MapTab> {
 
         // 정보창 추가
         final infoWindow = NInfoWindow.onMarker(
-          id: "info_${restaurant['id']}_$i",
+          id: "info_${restaurant['_id'] ?? restaurant['id']}_$i",
           text: restaurant['name']?.toString() ?? '음식점',
         );
         marker.openInfoWindow(infoWindow);
@@ -280,12 +202,12 @@ class _MapTabState extends State<MapTab> {
     print('마커 추가 완료');
   }
 
-  // 고정 위치로 지도 이동
-  void _moveToFixedLocation() {
+  // 인하대 후문으로 지도 이동
+  void _moveToInhaBackGate() {
     if (_mapController != null) {
       _mapController!.updateCamera(
         NCameraUpdate.withParams(
-          target: NLatLng(fixedLat, fixedLng),
+          target: NLatLng(inhaBackGateLat, inhaBackGateLng),
           zoom: 15,
         ),
       );
@@ -299,7 +221,7 @@ class _MapTabState extends State<MapTab> {
         final cameraPosition = await _mapController!.getCameraPosition();
         final currentZoom = cameraPosition.zoom;
 
-        if (currentZoom < 21) { // 최대 줌 레벨 제한
+        if (currentZoom < 21) {
           await _mapController!.updateCamera(
             NCameraUpdate.withParams(
               target: cameraPosition.target,
@@ -323,7 +245,7 @@ class _MapTabState extends State<MapTab> {
         final cameraPosition = await _mapController!.getCameraPosition();
         final currentZoom = cameraPosition.zoom;
 
-        if (currentZoom > 5) { // 최소 줌 레벨 제한
+        if (currentZoom > 5) {
           await _mapController!.updateCamera(
             NCameraUpdate.withParams(
               target: cameraPosition.target,
@@ -349,7 +271,7 @@ class _MapTabState extends State<MapTab> {
     }
   }
 
-  // 맛집 정보 모달 표시
+  // 음식점 정보 모달 표시
   void _showRestaurantInfo(Map<String, dynamic> restaurant) {
     showModalBottomSheet(
       context: context,
@@ -364,7 +286,7 @@ class _MapTabState extends State<MapTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                restaurant['name']?.toString() ?? restaurant['place_name']?.toString() ?? '음식점',
+                restaurant['name']?.toString() ?? '음식점',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -372,7 +294,7 @@ class _MapTabState extends State<MapTab> {
               ),
               SizedBox(height: 8),
               Text(
-                restaurant['category_name']?.toString() ?? '음식점',
+                restaurant['categoryName']?.toString() ?? '음식점',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -380,7 +302,7 @@ class _MapTabState extends State<MapTab> {
               ),
               SizedBox(height: 4),
               Text(
-                restaurant['address_name']?.toString() ?? restaurant['address']?.toString() ?? '주소 정보 없음',
+                restaurant['address']?.toString() ?? '주소 정보 없음',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[800],
@@ -474,17 +396,15 @@ class _MapTabState extends State<MapTab> {
               : NaverMap(
             options: NaverMapViewOptions(
               initialCameraPosition: NCameraPosition(
-                target: NLatLng(fixedLat, fixedLng),
-                zoom: 14, // 초기 줌을 약간 낮춰서 마커들을 더 잘 볼 수 있게
+                target: NLatLng(inhaBackGateLat, inhaBackGateLng), // 인하대 후문 중심
+                zoom: 15,
               ),
               indoorEnable: true,
               locationButtonEnable: false,
               consumeSymbolTapEvents: false,
-              // 지도 제스처 설정 (지원되는 것만)
-              scrollGesturesEnable: true, // 스크롤 가능
-              zoomGesturesEnable: true,   // 핀치 줌 가능
-              tiltGesturesEnable: true,   // 틸트 가능
-              // 줌 범위 설정
+              scrollGesturesEnable: true,
+              zoomGesturesEnable: true,
+              tiltGesturesEnable: true,
               minZoom: 5,
               maxZoom: 21,
             ),
@@ -505,12 +425,12 @@ class _MapTabState extends State<MapTab> {
                 );
               }
 
-              // 지도가 준비되면 맛집 마커 추가
+              // 지도가 준비되면 음식점 마커 추가
               if (_restaurants.isNotEmpty) {
                 await _addRestaurantMarkers();
               }
 
-              log("지도가 준비되었습니다", name: "MapTab");
+              log("지도가 준비되었습니다 (인하대 후문 중심)", name: "MapTab");
             },
           ),
 
@@ -525,7 +445,7 @@ class _MapTabState extends State<MapTab> {
               child: Row(
                 children: [
                   Text(
-                    '주변 맛집 지도',
+                    '인하대 후문 맛집 지도',
                     style: TextStyle(
                       fontSize: 18.0,
                       fontWeight: FontWeight.bold,
@@ -536,7 +456,7 @@ class _MapTabState extends State<MapTab> {
                   IconButton(
                     icon: Icon(Icons.refresh),
                     onPressed: () async {
-                      await _fetchRestaurantsFromServer();
+                      await _fetchRestaurantsFromDatabase();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('맛집 정보를 새로고침했습니다'),
@@ -550,24 +470,24 @@ class _MapTabState extends State<MapTab> {
             ),
           ),
 
-          // 센터 위치 버튼
+          // 인하대 후문 중심 버튼
           Positioned(
             right: 16,
-            bottom: 180, // 버튼들이 겹치지 않도록 위치 조정
+            bottom: 180,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              child: Icon(Icons.center_focus_strong,
+              child: Icon(Icons.school,
                   color: Theme.of(context).textTheme.bodyLarge?.color
               ),
-              onPressed: _moveToFixedLocation,
-              heroTag: "center_btn", // 고유 태그 추가
+              onPressed: _moveToInhaBackGate,
+              heroTag: "center_btn",
             ),
           ),
 
           // 확대 버튼
           Positioned(
             right: 16,
-            bottom: 240, // 센터 버튼 위에 배치
+            bottom: 240,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: Icon(Icons.add,
@@ -576,14 +496,14 @@ class _MapTabState extends State<MapTab> {
               ),
               onPressed: _zoomIn,
               heroTag: "zoom_in_btn",
-              mini: true, // 작은 크기
+              mini: true,
             ),
           ),
 
           // 축소 버튼
           Positioned(
             right: 16,
-            bottom: 120, // 센터 버튼 아래에 배치
+            bottom: 120,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: Icon(Icons.remove,
@@ -592,7 +512,7 @@ class _MapTabState extends State<MapTab> {
               ),
               onPressed: _zoomOut,
               heroTag: "zoom_out_btn",
-              mini: true, // 작은 크기
+              mini: true,
             ),
           ),
 
@@ -646,11 +566,12 @@ class _MapTabState extends State<MapTab> {
               child: Row(
                 children: [
                   OutlinedButton.icon(
-                    icon: Icon(Icons.filter_list),
-                    label: Text('필터'),
+                    icon: Icon(Icons.restaurant),
+                    label: Text('음식점'),
                     onPressed: () {
+                      // 음식점만 필터링하는 기능 추가 가능
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('필터 기능은 준비 중입니다.')),
+                        SnackBar(content: Text('음식점 필터는 준비 중입니다.')),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -661,11 +582,12 @@ class _MapTabState extends State<MapTab> {
                   ),
                   SizedBox(width: 8),
                   OutlinedButton.icon(
-                    icon: Icon(Icons.restaurant),
-                    label: Text('맛집 종류'),
+                    icon: Icon(Icons.local_cafe),
+                    label: Text('카페'),
                     onPressed: () {
+                      // 카페만 필터링하는 기능 추가 가능
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('맛집 종류 필터는 준비 중입니다.')),
+                        SnackBar(content: Text('카페 필터는 준비 중입니다.')),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -693,7 +615,17 @@ class _MapTabState extends State<MapTab> {
             Container(
               color: Colors.black.withOpacity(0.3),
               child: Center(
-                child: CircularProgressIndicator(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      '인하대 후문 맛집 정보를 불러오는 중...',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
