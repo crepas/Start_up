@@ -639,36 +639,33 @@ class _ListScreenState extends State<ListScreen> {
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(72),
-          child: Column(
-            children: [
-              CustomSearchBar(
-                onSearchResults: _handleSearchResults,
-                currentLat: _currentLat,
-                currentLng: _currentLng,
-                isSearchMode: _isSearchMode,
-                onSearchModeChanged: _handleSearchModeChanged,
-              ),
-              if (_isSearchMode)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: colorScheme.primary.withOpacity(0.1),
-                  child: Text(
-                    '검색 결과 (${filteredRestaurants.length}개)',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
       body: Column(
         children: [
+          // 검색바
+          CustomSearchBar(
+            onSearchResults: _handleSearchResults,
+            currentLat: _currentLat,
+            currentLng: _currentLng,
+            isSearchMode: _isSearchMode,
+            onSearchModeChanged: _handleSearchModeChanged,
+          ),
+
+          // 검색 결과 표시
+          if (_isSearchMode)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                '검색 결과 (${filteredRestaurants.length}개)',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
           // 필터 섹션
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
