@@ -34,15 +34,15 @@ class _MainScreenState extends State<MainScreen> {
   ];
   final List<String> _sectionTitles = ['#고기', '#분식', '#카페'];
 
-  // 카테고리 선택 시 ListScreen으로 이동
-  void _navigateToListScreen(String category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ListScreen(selectedCategory: category),
-      ),
-    );
-  }
+  // // 카테고리 선택 시 ListScreen으로 이동
+  // void _navigateToListScreen(String category) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => ListScreen(selectedCategory: category),
+  //     ),
+  //   );
+  // }
 
   // 상태가 변경될 때마다 위젯 다시 생성 - 중요!
   Widget _getBodyWidget() {
@@ -111,7 +111,7 @@ class _MainScreenState extends State<MainScreen> {
               itemCount: _categories.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
-                  onTap: () => _navigateToListScreen(_categories[index]['id']),
+                  // onTap: () => _navigateToListScreen(_categories[index]['id']),
                   child: Container(
                     margin: EdgeInsets.all(10),
                     child: Column(
