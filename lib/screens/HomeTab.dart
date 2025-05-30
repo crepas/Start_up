@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../widgets/CustomSearchBar.dart';
+import '../models/restaurant.dart';
 
 class HomeTab extends StatefulWidget {
   @override
@@ -12,8 +14,8 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  // 검색 컨트롤러 추가
-  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchMode = false;
+  List<Restaurant> _searchResults = [];
 
   final List<String> _categories = ['맛집', '카페', '한식', '양식', '중식'];
 
@@ -50,7 +52,6 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -75,15 +76,41 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
-  // 검색 기능
-  Future<void> _performSearch(String keyword) async {
-    if (keyword.trim().isEmpty) return;
+  // 검색 결과 처리
+  void _handleSearchResults(List<Restaurant> results) {
+    setState(() {
+      _searchResults = results;
+      if (results.isNotEmpty) {
+        // 검색 결과가 있으면 ListScreen으로 이동
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ListScreen(
+              searchKeyword: results.first.name,
+              searchResults: results.map((r) => r.toMap()).toList(),
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  // 검색 모드 변경
+  void _handleSearchModeChanged(bool isSearchMode) {
+    setState(() {
+      _isSearchMode = isSearchMode;
+    });
+  }
+
+  // 카테고리 선택 시 해당 카테고리로 검색
+  Future<void> _searchByCategory(String category) async {
+    if (category.trim().isEmpty) return;
 
     try {
       final apiKey = '4e4572f409f9b0cd5dc1f574779a03a7';
 
       final response = await http.get(
-        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=$keyword&x=$_currentLng&y=$_currentLat&radius=5000&size=15'),
+        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=$category&x=$_currentLng&y=$_currentLat&radius=5000&size=15'),
         headers: {
           'Authorization': 'KakaoAK $apiKey',
         },
@@ -93,16 +120,45 @@ class _HomeTabState extends State<HomeTab> {
         final data = jsonDecode(response.body);
         final List<dynamic> documents = data['documents'];
 
-        // 검색 결과를 ListScreen으로 전달
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ListScreen(
-              searchKeyword: keyword,
-              searchResults: documents.map((doc) => doc as Map<String, dynamic>).toList(),
+        // 검색 결과를 Restaurant 객체로 변환
+        List<Restaurant> searchRestaurants = documents.map((doc) {
+          Map<String, dynamic> searchResult = doc as Map<String, dynamic>;
+          return Restaurant(
+            id: searchResult['id']?.toString() ?? '',
+            name: searchResult['place_name'] ?? '',
+            address: searchResult['address_name'] ?? '',
+            roadAddress: searchResult['road_address_name'] ?? '',
+            lat: double.tryParse(searchResult['y'] ?? '0') ?? 0,
+            lng: double.tryParse(searchResult['x'] ?? '0') ?? 0,
+            categoryName: searchResult['category_name'] ?? '',
+            foodTypes: [category],
+            phone: searchResult['phone'] ?? '',
+            placeUrl: searchResult['place_url'] ?? '',
+            priceRange: '중간',
+            rating: 4.0 + (searchResult['id'].hashCode % 10) / 10,
+            likes: 50 + (searchResult['id'].hashCode % 100),
+            reviews: [],
+            images: ['assets/restaurant.png'],
+            createdAt: DateTime.now(),
+            reviewCount: searchResult['id'].hashCode % 50,
+            isOpen: true,
+            hasParking: searchResult['id'].hashCode % 2 == 0,
+            hasDelivery: searchResult['id'].hashCode % 3 == 0,
+          );
+        }).toList();
+
+        // 검색 결과가 있으면 ListScreen으로 이동
+        if (searchRestaurants.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ListScreen(
+                searchKeyword: category, // 카테고리 이름을 검색어로 전달
+                searchResults: searchRestaurants.map((r) => r.toMap()).toList(),
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
         _showErrorSnackBar('검색 중 오류가 발생했습니다.');
       }
@@ -110,11 +166,6 @@ class _HomeTabState extends State<HomeTab> {
       print('검색 오류: $e');
       _showErrorSnackBar('검색 중 오류가 발생했습니다.');
     }
-  }
-
-  // 카테고리 선택 시 해당 카테고리로 검색
-  void _searchByCategory(String category) {
-    _performSearch(category);
   }
 
   void _showErrorSnackBar(String message) {
@@ -132,37 +183,13 @@ class _HomeTabState extends State<HomeTab> {
       child: Scaffold(
         body: Column(
           children: [
-            // 검색 바 (기능 추가)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: '위치나 음식을 검색해보세요!',
-                  prefixIcon: Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25.0),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(vertical: 0.0),
-                ),
-                onChanged: (value) {
-                  setState(() {}); // suffixIcon을 위한 상태 업데이트
-                },
-                onSubmitted: (value) {
-                  if (value.trim().isNotEmpty) {
-                    _performSearch(value.trim());
-                  }
-                },
-              ),
+            // 검색 바 (CustomSearchBar로 교체)
+            CustomSearchBar(
+              onSearchResults: _handleSearchResults,
+              currentLat: _currentLat,
+              currentLng: _currentLng,
+              isSearchMode: _isSearchMode,
+              onSearchModeChanged: _handleSearchModeChanged,
             ),
 
             // 환영 메시지 배너
@@ -254,7 +281,7 @@ class _HomeTabState extends State<HomeTab> {
                             return GestureDetector(
                               onTap: () {
                                 // 음식점 이름으로 검색
-                                _performSearch(_foodItems[index]['title']);
+                                _searchByCategory(_foodItems[index]['title']);
                               },
                               child: Container(
                                 width: 150,

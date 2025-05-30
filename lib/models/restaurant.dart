@@ -131,6 +131,21 @@ class Restaurant {
       'createdAt': createdAt.toIso8601String(),
     };
   }
+
+  // Restaurant 객체를 Map으로 변환
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'place_name': name,
+      'address_name': address,
+      'road_address_name': roadAddress,
+      'x': lng.toString(),
+      'y': lat.toString(),
+      'category_name': categoryName,
+      'phone': phone,
+      'place_url': placeUrl,
+    };
+  }
 }
 
 class Review {

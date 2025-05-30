@@ -639,18 +639,25 @@ class _ListScreenState extends State<ListScreen> {
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(72),
+          child: Column(
+            children: [
+              // 검색바
+              CustomSearchBar(
+                onSearchResults: _handleSearchResults,
+                currentLat: _currentLat,
+                currentLng: _currentLng,
+                isSearchMode: _isSearchMode,
+                onSearchModeChanged: _handleSearchModeChanged,
+                initialSearchText: widget.searchKeyword ?? '', // 검색어 전달
+              ),
+            ],
+          ),
+        ),
       ),
       body: Column(
         children: [
-          // 검색바
-          CustomSearchBar(
-            onSearchResults: _handleSearchResults,
-            currentLat: _currentLat,
-            currentLng: _currentLng,
-            isSearchMode: _isSearchMode,
-            onSearchModeChanged: _handleSearchModeChanged,
-          ),
-
           // 검색 결과 표시
           if (_isSearchMode)
             Container(

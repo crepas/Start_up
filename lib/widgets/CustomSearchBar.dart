@@ -9,6 +9,7 @@ class CustomSearchBar extends StatefulWidget {
   final double currentLng;
   final bool isSearchMode;
   final Function(bool) onSearchModeChanged;
+  final String initialSearchText;
 
   const CustomSearchBar({
     Key? key,
@@ -17,6 +18,7 @@ class CustomSearchBar extends StatefulWidget {
     required this.currentLng,
     required this.isSearchMode,
     required this.onSearchModeChanged,
+    this.initialSearchText = '',
   }) : super(key: key);
 
   @override
@@ -24,8 +26,22 @@ class CustomSearchBar extends StatefulWidget {
 }
 
 class _CustomSearchBarState extends State<CustomSearchBar> {
-  final TextEditingController _searchController = TextEditingController();
+  late TextEditingController _searchController;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.initialSearchText);
+  }
+
+  @override
+  void didUpdateWidget(CustomSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSearchText != widget.initialSearchText) {
+      _searchController.text = widget.initialSearchText;
+    }
+  }
 
   @override
   void dispose() {

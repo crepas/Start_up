@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../services/restaurant_image_service.dart';
+import '../widgets/CustomSearchBar.dart';
 
 // 또는 같은 파일에 포함시킬 경우 아래 클래스를 추가
 
@@ -27,9 +28,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late int _currentIndex;
-
-  // 검색 컨트롤러 추가
-  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchMode = false;
+  List<Restaurant> _searchResults = [];
 
   // 현재 위치
   double _currentLat = 37.4516;
@@ -62,7 +62,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -305,15 +304,6 @@ class _MainScreenState extends State<MainScreen> {
       },
     ];
 
-  // // 카테고리 선택 시 ListScreen으로 이동
-  // void _navigateToListScreen(String category) {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => ListScreen(selectedCategory: category),
-  //     ),
-  //   );
-  // }
     _koreanItems = [
       {
         'title': '김밥천국',
@@ -321,6 +311,32 @@ class _MainScreenState extends State<MainScreen> {
         'category': '분식',
       },
     ];
+  }
+
+  // 검색 결과 처리
+  void _handleSearchResults(List<Restaurant> results) {
+    setState(() {
+      _searchResults = results;
+      if (results.isNotEmpty) {
+        // 검색 결과가 있으면 ListScreen으로 이동
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ListScreen(
+              searchKeyword: results.first.name,
+              searchResults: results.map((r) => r.toMap()).toList(),
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  // 검색 모드 변경
+  void _handleSearchModeChanged(bool isSearchMode) {
+    setState(() {
+      _isSearchMode = isSearchMode;
+    });
   }
 
   // 검색 기능
@@ -603,13 +619,13 @@ class _MainScreenState extends State<MainScreen> {
   Widget _getBodyWidget() {
     switch (_currentIndex) {
       case 0:
-        return _buildHomeTabContent();
+        return HomeTab();
       case 1:
         return MapTab(selectedRestaurant: widget.selectedRestaurant); // 음식점 정보 전달
       case 2:
         return MenuTab();
       default:
-        return _buildHomeTabContent();
+        return HomeTab();
     }
   }
 
@@ -621,37 +637,13 @@ class _MainScreenState extends State<MainScreen> {
     return SafeArea(
       child: Column(
         children: [
-          // 검색 바 (기능 추가)
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: '위치나 음식을 검색해보세요!',
-                prefixIcon: Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {});
-                  },
-                )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                ),
-                contentPadding: EdgeInsets.symmetric(vertical: 0.0),
-              ),
-              onChanged: (value) {
-                setState(() {}); // suffixIcon을 위한 상태 업데이트
-              },
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  _performSearch(value.trim());
-                }
-              },
-            ),
+          // 검색 바 (CustomSearchBar로 교체)
+          CustomSearchBar(
+            onSearchResults: _handleSearchResults,
+            currentLat: _currentLat,
+            currentLng: _currentLng,
+            isSearchMode: _isSearchMode,
+            onSearchModeChanged: _handleSearchModeChanged,
           ),
 
           // 환영 메시지 배너

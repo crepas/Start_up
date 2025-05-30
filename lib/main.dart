@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:start_up/screens/HomeTab.dart';
 import 'package:start_up/screens/ListScreen.dart';
 import 'package:start_up/screens/MenuTab.dart';
 import 'screens/splash.dart';
@@ -122,7 +123,7 @@ class MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
-      home: ListScreen(),
+      home: HomeTab(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
