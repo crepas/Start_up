@@ -255,26 +255,29 @@ class _FilterState extends State<Filter> {
         return Padding(
           key: ValueKey('카테고리'),
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: categories.map((cat) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _buildFixedSizeFilterChip(
-                  label: cat,
-                  selected: selectedCategories.contains(cat),
-                  onSelected: (v) {
-                    setState(() {
-                      if (v) selectedCategories.add(cat);
-                      else selectedCategories.remove(cat);
-                      _notify();
-                    });
-                  },
-                  height: chipHeight,
-                  textStyle: fixedTextStyle,
-                  getBackgroundColor: getBackgroundColor,
-                ),
-              )).toList(),
+          child: Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: categories.map((cat) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _buildFixedSizeFilterChip(
+                    label: cat,
+                    selected: selectedCategories.contains(cat),
+                    onSelected: (v) {
+                      setState(() {
+                        if (v) selectedCategories.add(cat);
+                        else selectedCategories.remove(cat);
+                        _notify();
+                      });
+                    },
+                    height: chipHeight,
+                    textStyle: fixedTextStyle,
+                    getBackgroundColor: getBackgroundColor,
+                  ),
+                )).toList(),
+              ),
             ),
           ),
         );

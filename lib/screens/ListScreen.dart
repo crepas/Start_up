@@ -937,10 +937,10 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    // 메모리 정리
-    // TODO: 리소스 해제 로직 추가
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   // 메모리 정리
+  //   // TODO: 리소스 해제 로직 추가
+  //   super.dispose();
+  // }
 }
