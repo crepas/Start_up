@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class Filter extends StatefulWidget {
   final Function(Map<String, dynamic>) onFilterChanged;
+  final Map<String, dynamic>? initialFilters; // 초기 필터 추가
 
   const Filter({
     Key? key,
     required this.onFilterChanged,
+    this.initialFilters,
   }) : super(key: key);
 
   @override
@@ -13,10 +15,30 @@ class Filter extends StatefulWidget {
 }
 
 class _FilterState extends State<Filter> {
-  String _selectedSort = 'distance';
+  String _selectedSort = 'rating';
   String? _selectedPriceRange;
   double _minRating = 0.0;
   List<String> _selectedCategories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 필터 설정
+    if (widget.initialFilters != null) {
+      final filters = widget.initialFilters!;
+      _selectedSort = filters['sortBy'] ?? 'rating';
+      _selectedPriceRange = filters['priceRange'];
+      _minRating = filters['minRating'] ?? 0.0;
+      _selectedCategories = List<String>.from(filters['categories'] ?? []);
+    }
+
+    // 초기 필터가 있으면 즉시 적용
+    if (widget.initialFilters != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateFilters();
+      });
+    }
+  }
 
   void _updateFilters() {
     widget.onFilterChanged({

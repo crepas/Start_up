@@ -1,6 +1,9 @@
+// ListView_RT.dart 수정 - 네트워크 이미지 지원
+
 import 'package:flutter/material.dart';
 import '../models/restaurant.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ListViewRt extends StatefulWidget {
   final Restaurant restaurant;
@@ -19,14 +22,107 @@ class ListViewRt extends StatefulWidget {
 }
 
 class _ListViewRtState extends State<ListViewRt> {
-  bool isFavorite = false; // 좋아요 상태를 저장하는 변수
+  bool isFavorite = false;
+
+  // 이미지 URL이 네트워크 이미지인지 확인
+  bool _isNetworkImage(String imagePath) {
+    return imagePath.startsWith('http://') || imagePath.startsWith('https://');
+  }
+
+  // 안전한 이미지 위젯 생성
+  Widget _buildRestaurantImage(String imagePath, double width, double height) {
+    if (_isNetworkImage(imagePath)) {
+      // 네트워크 이미지인 경우
+      return CachedNetworkImage(
+        imageUrl: imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          width: width,
+          height: height,
+          color: Colors.grey[300],
+          child: Center(
+            child: SizedBox(
+              width: width * 0.3,
+              height: width * 0.3,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: width,
+          height: height,
+          color: Colors.grey[300],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.restaurant,
+                color: Colors.grey[600],
+                size: width * 0.3,
+              ),
+              SizedBox(height: 4),
+              Text(
+                '이미지 로드 실패',
+                style: TextStyle(
+                  fontSize: width * 0.08,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // 로컬 assets 이미지인 경우
+      return Image.asset(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[300],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.restaurant,
+                  color: Colors.grey[600],
+                  size: width * 0.3,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '이미지 없음',
+                  style: TextStyle(
+                    fontSize: width * 0.08,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return GestureDetector(
-      onTap: widget.onTap, // 항목 탭 이벤트
+      onTap: widget.onTap,
       child: Container(
         margin: EdgeInsets.symmetric(
           vertical: screenWidth * 0.01,
@@ -43,13 +139,12 @@ class _ListViewRtState extends State<ListViewRt> {
               spreadRadius: 0,
             ),
           ],
-          // 선택된 항목 강조 표시
           border: widget.isExpanded
               ? Border.all(color: Colors.blue.withOpacity(0.5), width: 1.5)
               : null,
         ),
         width: double.infinity,
-        height: screenWidth * 0.14, // 기존 비율 유지
+        height: screenWidth * 0.14,
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: screenWidth * 0.025,
@@ -57,23 +152,14 @@ class _ListViewRtState extends State<ListViewRt> {
           ),
           child: Row(
             children: [
-              // 음식점 이미지 - 데이터에서 가져옴
+              // 음식점 이미지 - 네트워크 이미지 지원
               ClipRRect(
                 borderRadius: BorderRadius.circular(screenWidth * 0.015),
                 child: widget.restaurant.images.isNotEmpty
-                    ? Image.asset(
-                  widget.restaurant.images.first, // 첫 번째 이미지 사용
-                  width: screenWidth * 0.12,
-                  height: screenWidth * 0.12,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: screenWidth * 0.12,
-                      height: screenWidth * 0.12,
-                      color: Colors.grey[300],
-                      child: Icon(Icons.restaurant, color: Colors.grey[600]),
-                    );
-                  },
+                    ? _buildRestaurantImage(
+                  widget.restaurant.images.first,
+                  screenWidth * 0.12,
+                  screenWidth * 0.12,
                 )
                     : Container(
                   width: screenWidth * 0.12,
@@ -85,7 +171,7 @@ class _ListViewRtState extends State<ListViewRt> {
 
               SizedBox(width: screenWidth * 0.02),
 
-              // 음식점 정보 컬럼 - 데이터에서 가져옴
+              // 음식점 정보 컬럼
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,17 +202,17 @@ class _ListViewRtState extends State<ListViewRt> {
                 ),
               ),
 
-              // 좋아요 버튼 (이벤트 버블링 방지)
+              // 좋아요 버튼
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact(); // 햅틱 피드백 추가
+                  HapticFeedback.lightImpact();
                   setState(() {
-                    isFavorite = !isFavorite; // 상태 토글
+                    isFavorite = !isFavorite;
                   });
                 },
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
-                  padding: EdgeInsets.all(screenWidth * 0.01), // 터치 영역 확장
+                  padding: EdgeInsets.all(screenWidth * 0.01),
                   child: Image.asset(
                     isFavorite ? 'assets/Heart_P.png' : 'assets/Heart_G.png',
                     width: screenWidth * 0.06,
@@ -134,7 +220,6 @@ class _ListViewRtState extends State<ListViewRt> {
                     fit: BoxFit.contain,
                   ),
                 ),
-
               ),
             ],
           ),

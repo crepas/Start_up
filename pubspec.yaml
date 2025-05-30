@@ -42,6 +42,9 @@ dependencies:
   geolocator: ^13.0.4
   shared_preferences: ^2.5.3
 
+  # 네트워크 이미지 캐싱을 위한 패키지 추가
+  cached_network_image: ^3.4.1
+
 
 dev_dependencies:
   flutter_test:

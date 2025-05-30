@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/BottomNavBar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeTab extends StatefulWidget {
   @override
@@ -13,15 +14,15 @@ class _HomeTabState extends State<HomeTab> {
   final List<Map<String, dynamic>> _foodItems = [
     {
       'title': '장터삼겹살',
-      'imageUrl': 'assets/samgyupsal.png',
+      'imageUrl': 'assets/samgyupsal.png', // 나중에 서버에서 실제 이미지 URL로 교체
     },
     {
       'title': '명륜진사갈비',
-      'imageUrl': 'assets/myung_jin.png',
+      'imageUrl': 'assets/myung_jin.png', // 나중에 서버에서 실제 이미지 URL로 교체
     },
     {
       'title': '온기족발',
-      'imageUrl': 'assets/onki.png',
+      'imageUrl': 'assets/onki.png', // 나중에 서버에서 실제 이미지 URL로 교체
     },
   ];
 
@@ -30,11 +31,82 @@ class _HomeTabState extends State<HomeTab> {
 
   int _currentIndex = 0;
 
+  // 이미지 URL이 네트워크 이미지인지 확인하는 헬퍼 함수
+  bool _isNetworkImage(String imagePath) {
+    return imagePath.startsWith('http://') || imagePath.startsWith('https://');
+  }
+
+  // 안전한 이미지 위젯을 생성하는 헬퍼 함수
+  Widget _buildFoodImage(String imageUrl, double width, double height) {
+    if (_isNetworkImage(imageUrl)) {
+      // 네트워크 이미지인 경우
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          width: width,
+          height: height,
+          color: Theme.of(context).cardColor,
+          child: Center(
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) {
+          return Container(
+            width: width,
+            height: height,
+            color: Theme.of(context).cardColor,
+            child: Center(
+              child: Icon(
+                Icons.image_not_supported,
+                size: 40,
+                color: Theme.of(context).hintColor,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // 로컬 assets 이미지인 경우
+      return Image.asset(
+        imageUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            color: Theme.of(context).cardColor,
+            child: Center(
+              child: Icon(
+                Icons.image_not_supported,
+                size: 40,
+                color: Theme.of(context).hintColor,
+              ),
+            ),
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return SafeArea(
       child: Scaffold(
         body: Column(
@@ -143,19 +215,17 @@ class _HomeTabState extends State<HomeTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // 음식 이미지
+                                  // 음식 이미지 - 네트워크 이미지 지원
                                   Expanded(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10.0),
                                       child: Container(
                                         color: theme.cardColor,
-                                        child: Image.asset(
+                                        width: double.infinity,
+                                        child: _buildFoodImage(
                                           _foodItems[index]['imageUrl'],
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Center(child: Icon(Icons.image_not_supported));
-                                          },
+                                          double.infinity,
+                                          double.infinity,
                                         ),
                                       ),
                                     ),

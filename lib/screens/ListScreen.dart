@@ -37,6 +37,9 @@ class _ListScreenState extends State<ListScreen> {
   List<Restaurant> filteredRestaurants = [];
   bool _isLoading = false;
 
+  // 필터 상태 변수 추가
+  Map<String, dynamic> _currentFilters = {};
+
   // 인하대 후문 정확한 좌표 (MapTab과 동일하게 설정)
   final double inhaBackGateLat = 37.45169;
   final double inhaBackGateLng = 126.65464;
@@ -44,6 +47,13 @@ class _ListScreenState extends State<ListScreen> {
   @override
   void initState() {
     super.initState();
+    // 선택된 카테고리가 있으면 초기 필터 설정
+    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
+      _currentFilters = {
+        'sortBy': 'rating',
+        'categories': [widget.selectedCategory],
+      };
+    }
     _loadRestaurants();
   }
 
@@ -91,7 +101,8 @@ class _ListScreenState extends State<ListScreen> {
             restaurants = (data['restaurants'] as List)
                 .map((item) => _convertToRestaurant(item))
                 .toList();
-            filteredRestaurants = List.from(restaurants);
+            // 초기 필터 적용
+            _applyInitialFilters();
             _isLoading = false;
           });
 
@@ -109,9 +120,18 @@ class _ListScreenState extends State<ListScreen> {
         _isLoading = false;
         // 오류 발생 시 더미 데이터로 초기화
         restaurants = _getInhaDummyRestaurants();
-        filteredRestaurants = List.from(restaurants);
+        _applyInitialFilters();
       });
       _showErrorSnackBar('서버에서 데이터를 불러올 수 없어 샘플 데이터를 표시합니다.');
+    }
+  }
+
+  // 초기 필터 적용
+  void _applyInitialFilters() {
+    if (_currentFilters.isNotEmpty) {
+      _applyFilters(_currentFilters);
+    } else {
+      filteredRestaurants = List.from(restaurants);
     }
   }
 
@@ -344,6 +364,7 @@ class _ListScreenState extends State<ListScreen> {
 
   void _applyFilters(Map<String, dynamic> filters) {
     setState(() {
+      _currentFilters = filters;
       filteredRestaurants = restaurants.where((restaurant) {
         bool matches = true;
 
@@ -427,10 +448,16 @@ class _ListScreenState extends State<ListScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // 현재 선택된 카테고리에 따른 타이틀 설정
+    String appBarTitle = '인하대 후문 맛집';
+    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
+      appBarTitle = '인하대 후문 ${widget.selectedCategory} 맛집';
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '인하대 후문 맛집',
+          appBarTitle,
           style: theme.textTheme.titleLarge,
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -444,6 +471,7 @@ class _ListScreenState extends State<ListScreen> {
             color: theme.cardColor,
             child: Filter(
               onFilterChanged: _applyFilters,
+              initialFilters: _currentFilters, // 초기 필터 전달
             ),
           ),
 

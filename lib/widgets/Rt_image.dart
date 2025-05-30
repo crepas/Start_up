@@ -1,4 +1,6 @@
+// lib/widgets/Rt_image.dart 수정
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RtImage extends StatefulWidget {
   final List<String> images;
@@ -13,17 +15,65 @@ class RtImage extends StatefulWidget {
 }
 
 class _RtImageState extends State<RtImage> {
-  int currentPage = 0; // 현재 페이지 (슬라이더에서의 이미지 인덱스)
+  int currentPage = 0;
+
+  bool _isNetworkImage(String imagePath) {
+    return imagePath.startsWith('http://') || imagePath.startsWith('https://');
+  }
+
+  Widget _buildImage(String imagePath, double imageSize) {
+    if (_isNetworkImage(imagePath)) {
+      return CachedNetworkImage(
+        imageUrl: imagePath,
+        fit: BoxFit.cover,
+        width: imageSize,
+        height: imageSize,
+        placeholder: (context, url) => Container(
+          width: imageSize,
+          height: imageSize,
+          color: Colors.grey[300],
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        errorWidget: (context, error, stackTrace) => Container(
+          width: imageSize,
+          height: imageSize,
+          color: Colors.grey[300],
+          child: Icon(
+            Icons.broken_image,
+            size: imageSize * 0.2,
+            color: Colors.grey[500],
+          ),
+        ),
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        fit: BoxFit.cover,
+        width: imageSize,
+        height: imageSize,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: imageSize,
+            height: imageSize,
+            color: Colors.grey[300],
+            child: Icon(
+              Icons.broken_image,
+              size: imageSize * 0.2,
+              color: Colors.grey[500],
+            ),
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 화면의 width를 가져오기
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // width를 기준으로 이미지의 가로세로 크기를 동일하게 설정
     final imageSize = screenWidth;
 
-    // 이미지가 없는 경우 기본 이미지 표시
     if (widget.images.isEmpty) {
       return Center(
         child: Container(
@@ -56,14 +106,13 @@ class _RtImageState extends State<RtImage> {
         child: Stack(
           children: [
             _buildImageSlider(imageSize),
-            _buildImageIndex(imageSize),
+            if (widget.images.length > 1) _buildImageIndex(imageSize),
           ],
         ),
       ),
     );
   }
 
-  // 이미지 슬라이더를 생성하는 함수
   Widget _buildImageSlider(double imageSize) {
     return PageView.builder(
       itemCount: widget.images.length,
@@ -77,30 +126,15 @@ class _RtImageState extends State<RtImage> {
           panEnabled: true,
           minScale: 1,
           maxScale: 3,
-          child: Image.asset(
-            widget.images[index],
-            fit: BoxFit.cover,
-            width: imageSize,
-            height: imageSize,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: imageSize,
-                height: imageSize,
-                color: Colors.grey[300],
-                child: Icon(
-                  Icons.broken_image,
-                  size: imageSize * 0.2,
-                  color: Colors.grey[500],
-                ),
-              );
-            },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.04),
+            child: _buildImage(widget.images[index], imageSize),
           ),
         );
       },
     );
   }
 
-  // 현재 이미지 인덱스를 표시하는 위젯 (오른쪽 상단에 표시)
   Widget _buildImageIndex(double imageSize) {
     return Positioned(
       top: imageSize * 0.025,
