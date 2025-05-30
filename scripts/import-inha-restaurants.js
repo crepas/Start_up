@@ -1,3 +1,5 @@
+// import-inha-restaurants.js 수정된 버전
+
 const axios = require('axios');
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -10,7 +12,7 @@ const KAKAO_API_KEY = process.env.KAKAO_API_KEY || '4e4572f409f9b0cd5dc1f574779a
 // 데이터베이스 연결
 connectDB();
 
-// 인하대 후문 정확한 좌표 (37.4516, 126.7015)
+// 인하대 후문 정확한 좌표
 const INHA_BACK_GATE = {
   lat: 37.45169,
   lng: 126.65464,
@@ -56,6 +58,81 @@ function getPriceRangeFromCategory(categoryName) {
   return '중간';
 }
 
+// 카카오 장소 상세 정보에서 이미지 가져오기
+async function getPlaceImages(placeId) {
+  try {
+    console.log(`장소 ID ${placeId}의 이미지 가져오는 중...`);
+    
+    // 카카오 장소 상세 API 호출
+    const response = await axios.get(`https://place.map.kakao.com/main/v/${placeId}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      timeout: 10000
+    });
+
+    // HTML에서 이미지 URL 추출 (정규식 사용)
+    const html = response.data;
+    const imageUrls = [];
+    
+    // 다양한 패턴으로 이미지 URL 찾기
+    const patterns = [
+      /https:\/\/t1\.daumcdn\.net\/place\/[^"'\s)]+/g,
+      /https:\/\/img1\.daumcdn\.net\/thumb\/[^"'\s)]+/g,
+      /https:\/\/t1\.kakaocdn\.net\/[^"'\s)]+/g
+    ];
+    
+    patterns.forEach(pattern => {
+      const matches = html.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          // URL 정리 (쿼리 파라미터 제거)
+          const cleanUrl = match.split('?')[0];
+          if (!imageUrls.includes(cleanUrl)) {
+            imageUrls.push(cleanUrl);
+          }
+        });
+      }
+    });
+    
+    console.log(`장소 ID ${placeId}에서 ${imageUrls.length}개의 이미지 발견`);
+    return imageUrls.slice(0, 5); // 최대 5개만 반환
+    
+  } catch (error) {
+    console.log(`장소 ID ${placeId} 이미지 가져오기 실패:`, error.message);
+    return [];
+  }
+}
+
+// 대체 이미지 URL 생성 (카카오 기본 이미지 사용)
+function generateFallbackImages(categoryName, placeName) {
+  const foodTypeImages = {
+    '한식': 'https://t1.daumcdn.net/cfile/tistory/995EFF455C9F1E2518',
+    '중식': 'https://t1.daumcdn.net/cfile/tistory/998C67355C9F1E2606',
+    '일식': 'https://t1.daumcdn.net/cfile/tistory/997F46355C9F1E2702',
+    '양식': 'https://t1.daumcdn.net/cfile/tistory/996F2E355C9F1E2811',
+    '카페': 'https://t1.daumcdn.net/cfile/tistory/993A50355C9F1E2904',
+    '치킨': 'https://t1.daumcdn.net/cfile/tistory/991234355C9F1E3005',
+    '피자': 'https://t1.daumcdn.net/cfile/tistory/99E34C355C9F1E3118',
+    '족발': 'https://t1.daumcdn.net/cfile/tistory/99B567355C9F1E3201'
+  };
+  
+  // 카테고리에 맞는 기본 이미지 찾기
+  for (const [type, imageUrl] of Object.entries(foodTypeImages)) {
+    if (categoryName.includes(type)) {
+      return [imageUrl];
+    }
+  }
+  
+  // 기본 음식점 이미지
+  return ['https://t1.daumcdn.net/cfile/tistory/992B3E355C9F1E3312'];
+}
+
 // 카카오 로컬 API에서 음식점 및 카페 데이터 가져오기
 async function fetchPlacesFromKakao(keyword, categoryCode, page = 1) {
   try {
@@ -81,7 +158,7 @@ async function fetchPlacesFromKakao(keyword, categoryCode, page = 1) {
   }
 }
 
-// MongoDB에 음식점/카페 저장하기
+// MongoDB에 음식점/카페 저장하기 (이미지 포함)
 async function savePlaceToMongoDB(place) {
   try {
     // 이미 존재하는지 확인
@@ -96,7 +173,19 @@ async function savePlaceToMongoDB(place) {
     const foodTypes = getFoodTypesFromCategory(place.category_name);
     const priceRange = getPriceRangeFromCategory(place.category_name);
     
-    // 임의의 평점 및 좋아요 수 생성 (실제 데이터)
+    // 이미지 가져오기 시도
+    console.log(`${place.place_name}의 이미지 검색 중...`);
+    let imageUrls = await getPlaceImages(place.id);
+    
+    // 이미지를 찾지 못한 경우 카테고리별 기본 이미지 사용
+    if (imageUrls.length === 0) {
+      console.log(`${place.place_name}: 실제 이미지를 찾지 못해 기본 이미지 사용`);
+      imageUrls = generateFallbackImages(place.category_name, place.place_name);
+    } else {
+      console.log(`${place.place_name}: ${imageUrls.length}개의 실제 이미지 발견`);
+    }
+    
+    // 임의의 평점 및 좋아요 수 생성
     const rating = Math.round((Math.random() * 2 + 3) * 10) / 10; // 3.0-5.0
     const likes = Math.floor(Math.random() * 200); // 0-199
     
@@ -120,15 +209,65 @@ async function savePlaceToMongoDB(place) {
       rating: rating,
       likes: likes,
       reviews: [],
-      images: ['assets/restaurant.png'] // 기본 이미지
+      images: imageUrls // 실제 카카오에서 가져온 이미지들
     });
     
     await newPlace.save();
-    console.log(`새로 저장됨: ${place.place_name} (${place.category_name})`);
+    console.log(`새로 저장됨: ${place.place_name} (이미지 ${imageUrls.length}개)`);
     return newPlace;
   } catch (error) {
     console.error(`저장 오류 (${place.place_name}):`, error);
     return null;
+  }
+}
+
+// 기존 음식점들의 이미지 업데이트
+async function updateExistingRestaurantImages() {
+  try {
+    console.log('기존 음식점들의 이미지 업데이트 시작...');
+    
+    // 기본 이미지만 있는 음식점들 찾기
+    const restaurantsToUpdate = await Restaurant.find({
+      $or: [
+        { images: { $size: 0 } },
+        { images: ['assets/restaurant.png'] },
+        { images: { $exists: false } }
+      ]
+    });
+    
+    console.log(`업데이트할 음식점 수: ${restaurantsToUpdate.length}개`);
+    
+    for (const restaurant of restaurantsToUpdate) {
+      console.log(`${restaurant.name} 이미지 업데이트 중...`);
+      
+      if (restaurant.kakaoId) {
+        // 카카오 ID가 있으면 실제 이미지 가져오기 시도
+        const imageUrls = await getPlaceImages(restaurant.kakaoId);
+        
+        if (imageUrls.length > 0) {
+          restaurant.images = imageUrls;
+          console.log(`${restaurant.name}: ${imageUrls.length}개 실제 이미지 추가`);
+        } else {
+          // 실제 이미지가 없으면 카테고리별 기본 이미지
+          restaurant.images = generateFallbackImages(restaurant.categoryName, restaurant.name);
+          console.log(`${restaurant.name}: 카테고리별 기본 이미지 사용`);
+        }
+        
+        await restaurant.save();
+      } else {
+        // 카카오 ID가 없으면 카테고리별 기본 이미지만 사용
+        restaurant.images = generateFallbackImages(restaurant.categoryName, restaurant.name);
+        await restaurant.save();
+        console.log(`${restaurant.name}: 카테고리별 기본 이미지 사용 (카카오ID 없음)`);
+      }
+      
+      // API 과부하 방지를 위한 딜레이
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    console.log('기존 음식점 이미지 업데이트 완료!');
+  } catch (error) {
+    console.error('기존 음식점 이미지 업데이트 오류:', error);
   }
 }
 
@@ -138,10 +277,6 @@ async function importInhaRestaurants() {
     console.log('인하대 후문 주변 음식점/카페 데이터 가져오기 시작...');
     console.log(`위치: 위도 ${INHA_BACK_GATE.lat}, 경도 ${INHA_BACK_GATE.lng}`);
     console.log(`반경: ${INHA_BACK_GATE.radius}m`);
-    
-    // 기존 데이터 삭제 (선택사항)
-    // await Restaurant.deleteMany({});
-    // console.log('기존 데이터 삭제 완료');
     
     let totalSaved = 0;
     
@@ -165,13 +300,14 @@ async function importInhaRestaurants() {
           for (const place of places) {
             const saved = await savePlaceToMongoDB(place);
             if (saved) totalSaved++;
+            
+            // 이미지 가져오기 때문에 더 긴 딜레이
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
           
           isEnd = data.meta.is_end;
           page++;
           
-          // API 과부하 방지
-          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`${keyword} 검색 오류:`, error.message);
           break;
@@ -199,19 +335,24 @@ async function importInhaRestaurants() {
           for (const place of places) {
             const saved = await savePlaceToMongoDB(place);
             if (saved) totalSaved++;
+            
+            // 이미지 가져오기 때문에 딜레이
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
           
           isEnd = data.meta.is_end;
           page++;
           
-          // API 과부하 방지
-          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`${keyword} 검색 오류:`, error.message);
           break;
         }
       }
     }
+    
+    // 3. 기존 음식점들의 이미지 업데이트
+    console.log('\n=== 기존 음식점 이미지 업데이트 ===');
+    await updateExistingRestaurantImages();
     
     // 결과 출력
     console.log(`\n=== 데이터 수집 완료 ===`);
@@ -221,11 +362,15 @@ async function importInhaRestaurants() {
     const totalCount = await Restaurant.countDocuments();
     const foodCount = await Restaurant.countDocuments({ categoryGroupCode: 'FD6' });
     const cafeCount = await Restaurant.countDocuments({ categoryGroupCode: 'CE7' });
+    const withRealImages = await Restaurant.countDocuments({ 
+      images: { $not: { $regex: /^assets\/|^https:\/\/t1\.daumcdn\.net\/cfile/ } }
+    });
     
     console.log(`\n데이터베이스 현황:`);
     console.log(`- 전체: ${totalCount}개`);
     console.log(`- 음식점: ${foodCount}개`);
     console.log(`- 카페: ${cafeCount}개`);
+    console.log(`- 실제 이미지가 있는 곳: ${withRealImages}개`);
     
     mongoose.connection.close();
     console.log('데이터베이스 연결 종료');
@@ -241,4 +386,4 @@ if (require.main === module) {
   importInhaRestaurants();
 }
 
-module.exports = { importInhaRestaurants, INHA_BACK_GATE };
+module.exports = { importInhaRestaurants, updateExistingRestaurantImages, INHA_BACK_GATE };
