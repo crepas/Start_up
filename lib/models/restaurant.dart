@@ -60,7 +60,7 @@ class Restaurant {
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     final location = json['location'] ?? {};
     final coordinates = location['coordinates'] ?? [];
-    
+
     // coordinates 배열이 유효한지 확인
     double lat = 0.0;
     double lng = 0.0;
