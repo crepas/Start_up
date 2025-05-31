@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:start_up/screens/HomeTab.dart';
 import 'package:start_up/screens/ListScreen.dart';
+import 'package:start_up/screens/MainScreen.dart';
 import 'package:start_up/screens/MenuTab.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
@@ -21,7 +22,6 @@ import '../screens/favorites_Screen.dart';
 import '../screens/signup.dart';
 import '../widgets/ReviewInputWidget.dart';
 import '../widgets/Filter.dart';
-import 'screens/MainScreen.dart';
 import 'theme/light_theme.dart';
 import 'theme/dark_theme.dart';
 // 로그인 상태 체크를 위한 클래스
@@ -61,7 +61,7 @@ class _AuthCheckState extends State<AuthCheck> {
     if (_isLoading) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     } else {
-      return _isLoggedIn ? MainScreen() : LoginScreen();
+      return _isLoggedIn ? HomeTab() : LoginScreen();
     }
   }
 }
@@ -123,11 +123,11 @@ class MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
-      home: HomeTab(),
+      home: MainScreen(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
-        '/main': (context) => MainScreen(),
+        '/main': (context) => HomeTab(),
         '/list': (context) => ListScreen(),
       },
     );

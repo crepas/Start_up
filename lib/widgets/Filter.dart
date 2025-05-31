@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class Filter extends StatefulWidget {
   final Function(Map<String, dynamic>) onFilterChanged;
+  final Map<String, dynamic>? initialFilters;
 
-  const Filter({Key? key, required this.onFilterChanged}) : super(key: key);
+  const Filter({
+    Key? key, 
+    required this.onFilterChanged,
+    this.initialFilters,
+  }) : super(key: key);
 
   @override
   State<Filter> createState() => _FilterState();
@@ -15,6 +20,26 @@ class _FilterState extends State<Filter> {
   bool onlyHeart = false;
   String? reviewOrder; // 'asc' or 'desc'
   Set<String> selectedCategories = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialFilters != null) {
+      // 초기 필터 값 설정
+      if (widget.initialFilters!['distanceOrder'] != null) {
+        distanceOrder = widget.initialFilters!['distanceOrder'];
+      }
+      if (widget.initialFilters!['onlyHeart'] != null) {
+        onlyHeart = widget.initialFilters!['onlyHeart'];
+      }
+      if (widget.initialFilters!['reviewOrder'] != null) {
+        reviewOrder = widget.initialFilters!['reviewOrder'];
+      }
+      if (widget.initialFilters!['categories'] != null) {
+        selectedCategories = Set<String>.from(widget.initialFilters!['categories']);
+      }
+    }
+  }
 
   void _notify() {
     widget.onFilterChanged({

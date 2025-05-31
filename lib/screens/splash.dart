@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../screens/MainScreen.dart';
 import '../screens/HomeTab.dart';
 import '../screens/login.dart';
 
@@ -20,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => isLoggedIn ? MainScreen() : LoginScreen(),
+          builder: (context) => isLoggedIn ? HomeTab() : LoginScreen(),
         ),
       );
     });

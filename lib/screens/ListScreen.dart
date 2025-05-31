@@ -12,20 +12,22 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../utils/api_config.dart';
-import '../screens/MainScreen.dart';
+import 'HomeTab.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ListScreen extends StatefulWidget {
   final String? selectedCategory;
-  final String? searchKeyword; // 검색 키워드 추가
-  final List<Map<String, dynamic>>? searchResults; // 검색 결과 추가
+  final String? searchKeyword;
+  final List<Map<String, dynamic>>? searchResults;
+  final String? initialSearchText;
 
   const ListScreen({
     Key? key,
     this.selectedCategory,
     this.searchKeyword,
     this.searchResults,
+    this.initialSearchText,
   }) : super(key: key);
 
   @override
@@ -68,7 +70,6 @@ class _ListScreenState extends State<ListScreen> {
 
   // 화면 초기화
   Future<void> _initScreen() async {
-    // 현재 위치 가져오기
     await _getCurrentLocation();
 
     // 검색 결과가 있으면 검색 모드로 시작
@@ -76,7 +77,6 @@ class _ListScreenState extends State<ListScreen> {
       _isSearchMode = true;
       _convertSearchResultsToRestaurants();
     } else {
-      // 기본 음식점 목록 로드
       _loadRestaurants();
     }
   }
@@ -402,101 +402,6 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  // 인하대 후문 주변 더미 데이터
-  List<Restaurant> _getInhaDummyRestaurants() {
-    return [
-      Restaurant(
-        id: '1',
-        name: '인하반점',
-        address: '인천 미추홀구 용현동 산1-1',
-        roadAddress: '인천 미추홀구 인하로 12',
-        lat: 37.4495,
-        lng: 126.7012,
-        categoryName: '음식점 > 중식 > 중화요리',
-        foodTypes: ['중식', '짜장면'],
-        phone: '032-867-0582',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.1,
-        likes: 95,
-        reviews: [
-          Review(
-            username: '중식러버',
-            comment: '짜장면 맛집! 학생들이 많이 찾는 곳이에요.',
-            rating: 4.0,
-            date: DateTime.now().subtract(Duration(days: 1)),
-          ),
-        ],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 60)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: true,
-        isAd: true, // 광고 표시
-      ),
-      Restaurant(
-        id: '2',
-        name: '후문 삼겹살',
-        address: '인천 미추홀구 용현동 618-1',
-        roadAddress: '인천 미추홀구 인하로 100',
-        lat: 37.4492,
-        lng: 126.7015,
-        categoryName: '음식점 > 한식 > 고기구이',
-        foodTypes: ['한식', '고기'],
-        phone: '032-123-4567',
-        placeUrl: '',
-        priceRange: '중간',
-        rating: 4.3,
-        likes: 76,
-        reviews: [
-          Review(
-            username: '고기사랑',
-            comment: '후문에서 가장 맛있는 삼겹살집!',
-            rating: 4.3,
-            date: DateTime.now().subtract(Duration(days: 2)),
-          ),
-        ],
-        images: ['assets/samgyupsal.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-      ),
-      Restaurant(
-        id: '3',
-        name: '후문카페',
-        address: '인천 미추홀구 용현동 253',
-        roadAddress: '인천 미추홀구 인하로 150',
-        lat: 37.4498,
-        lng: 126.7008,
-        categoryName: '음식점 > 카페 > 커피전문점',
-        foodTypes: ['카페', '커피'],
-        phone: '032-456-7890',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.0,
-        likes: 120,
-        reviews: [
-          Review(
-            username: '커피매니아',
-            comment: '공부하기 좋은 카페. 후문에서 가장 넓어요.',
-            rating: 4.0,
-            date: DateTime.now().subtract(Duration(hours: 12)),
-          ),
-        ],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 90)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: false,
-        hasWifi: true,
-      ),
-    ];
-  }
-
   void _applyFilters(Map<String, dynamic> filters) {
     setState(() {
       _currentFilters = filters;
@@ -628,7 +533,7 @@ class _ListScreenState extends State<ListScreen> {
                 currentLng: _currentLng,
                 isSearchMode: _isSearchMode,
                 onSearchModeChanged: _handleSearchModeChanged,
-                initialSearchText: widget.searchKeyword ?? '', // 검색어 전달
+                initialSearchText: widget.initialSearchText ?? widget.searchKeyword ?? '',
               ),
             ],
           ),
@@ -757,7 +662,7 @@ class _ListScreenState extends State<ListScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => MainScreen(
+                                      builder: (context) => HomeTab(
                                         initialTab: 1,
                                         selectedRestaurant: restaurant,
                                       ),
@@ -838,5 +743,100 @@ class _ListScreenState extends State<ListScreen> {
         ],
       ),
     );
+  }
+
+  // 인하대 후문 주변 더미 데이터
+  List<Restaurant> _getInhaDummyRestaurants() {
+    return [
+      Restaurant(
+        id: '1',
+        name: '인하반점',
+        address: '인천 미추홀구 용현동 산1-1',
+        roadAddress: '인천 미추홀구 인하로 12',
+        lat: 37.4495,
+        lng: 126.7012,
+        categoryName: '음식점 > 중식 > 중화요리',
+        foodTypes: ['중식', '짜장면'],
+        phone: '032-867-0582',
+        placeUrl: '',
+        priceRange: '저렴',
+        rating: 4.1,
+        likes: 95,
+        reviews: [
+          Review(
+            username: '중식러버',
+            comment: '짜장면 맛집! 학생들이 많이 찾는 곳이에요.',
+            rating: 4.0,
+            date: DateTime.now().subtract(Duration(days: 1)),
+          ),
+        ],
+        images: ['assets/restaurant.png'],
+        createdAt: DateTime.now().subtract(Duration(days: 60)),
+        reviewCount: 1,
+        isOpen: true,
+        hasParking: false,
+        hasDelivery: true,
+        isAd: true, // 광고 표시
+      ),
+      Restaurant(
+        id: '2',
+        name: '후문 삼겹살',
+        address: '인천 미추홀구 용현동 618-1',
+        roadAddress: '인천 미추홀구 인하로 100',
+        lat: 37.4492,
+        lng: 126.7015,
+        categoryName: '음식점 > 한식 > 고기구이',
+        foodTypes: ['한식', '고기'],
+        phone: '032-123-4567',
+        placeUrl: '',
+        priceRange: '중간',
+        rating: 4.3,
+        likes: 76,
+        reviews: [
+          Review(
+            username: '고기사랑',
+            comment: '후문에서 가장 맛있는 삼겹살집!',
+            rating: 4.3,
+            date: DateTime.now().subtract(Duration(days: 2)),
+          ),
+        ],
+        images: ['assets/samgyupsal.png'],
+        createdAt: DateTime.now().subtract(Duration(days: 30)),
+        reviewCount: 1,
+        isOpen: true,
+        hasParking: true,
+        hasDelivery: false,
+      ),
+      Restaurant(
+        id: '3',
+        name: '후문카페',
+        address: '인천 미추홀구 용현동 253',
+        roadAddress: '인천 미추홀구 인하로 150',
+        lat: 37.4498,
+        lng: 126.7008,
+        categoryName: '음식점 > 카페 > 커피전문점',
+        foodTypes: ['카페', '커피'],
+        phone: '032-456-7890',
+        placeUrl: '',
+        priceRange: '저렴',
+        rating: 4.0,
+        likes: 120,
+        reviews: [
+          Review(
+            username: '커피매니아',
+            comment: '공부하기 좋은 카페. 후문에서 가장 넓어요.',
+            rating: 4.0,
+            date: DateTime.now().subtract(Duration(hours: 12)),
+          ),
+        ],
+        images: ['assets/restaurant.png'],
+        createdAt: DateTime.now().subtract(Duration(days: 90)),
+        reviewCount: 1,
+        isOpen: true,
+        hasParking: false,
+        hasDelivery: false,
+        hasWifi: true,
+      ),
+    ];
   }
 }
