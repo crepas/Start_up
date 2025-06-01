@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/restaurant.dart';
 import '../utils/api_config.dart';
+import 'package:permission_handler/permission_handler.dart'; // 추가된 패키지
+
 
 class MapTab extends StatefulWidget {
   final Restaurant? selectedRestaurant;
@@ -27,7 +29,7 @@ class _MapTabState extends State<MapTab> {
   NaverMapController? _mapController;
   bool _isLoading = true;
   bool _isLoadingRestaurants = false;
-  double _currentZoom = 14.0;
+  double _currentZoom = 14.0; // 현재 줌 레벨 추적
 
   // 인하대 후문 정확한 좌표 (인천 미추홀구 용현동)
   final double inhaBackGateLat = 37.45169;

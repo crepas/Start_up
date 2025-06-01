@@ -6,19 +6,28 @@ import '../widgets/Filter.dart';
 import '../widgets/Rt_image.dart';
 import '../widgets/Rt_information.dart';
 import '../widgets/Rt_ReviewList.dart';
+import '../widgets/CustomSearchBar.dart';
 import '../models/restaurant.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../utils/api_config.dart';
-import '../screens/MainScreen.dart';
+import 'HomeTab.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ListScreen extends StatefulWidget {
   final String? selectedCategory;
+  final String? searchKeyword;
+  final List<Map<String, dynamic>>? searchResults;
+  final String? initialSearchText;
 
   const ListScreen({
     Key? key,
     this.selectedCategory,
+    this.searchKeyword,
+    this.searchResults,
+    this.initialSearchText,
   }) : super(key: key);
 
   @override
@@ -36,7 +45,11 @@ class _ListScreenState extends State<ListScreen> {
   List<Restaurant> restaurants = [];
   List<Restaurant> filteredRestaurants = [];
   bool _isLoading = false;
+  bool _isSearchMode = false;
 
+  // 현재 위치
+  double _currentLat = 37.4516;
+  double _currentLng = 126.7015;
   // 필터 상태 변수 추가
   Map<String, dynamic> _currentFilters = {};
 
@@ -47,6 +60,127 @@ class _ListScreenState extends State<ListScreen> {
   @override
   void initState() {
     super.initState();
+    _initScreen();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  // 화면 초기화
+  Future<void> _initScreen() async {
+    await _getCurrentLocation();
+
+    // 검색 결과가 있으면 검색 모드로 시작
+    if (widget.searchKeyword != null && widget.searchResults != null) {
+      _isSearchMode = true;
+      _convertSearchResultsToRestaurants();
+    } else {
+      _loadRestaurants();
+    }
+  }
+
+  // 현재 위치 가져오기
+  Future<void> _getCurrentLocation() async {
+    try {
+      PermissionStatus status = await Permission.location.request();
+
+      if (status.isGranted) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        );
+
+        setState(() {
+          _currentLat = position.latitude;
+          _currentLng = position.longitude;
+        });
+      }
+    } catch (e) {
+      print('위치 가져오기 오류: $e');
+    }
+  }
+
+  // 검색 결과를 Restaurant 객체로 변환
+  void _convertSearchResultsToRestaurants() {
+    if (widget.searchResults == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      restaurants = widget.searchResults!.map((searchResult) {
+        return Restaurant(
+          id: searchResult['id']?.toString() ?? '',
+          name: searchResult['place_name'] ?? '',
+          address: searchResult['address_name'] ?? '',
+          roadAddress: searchResult['road_address_name'] ?? '',
+          lat: _parseDouble(searchResult['y'] ?? 0),
+          lng: _parseDouble(searchResult['x'] ?? 0),
+          categoryName: searchResult['category_name'] ?? '',
+          foodTypes: _parseFoodTypesFromCategory(searchResult['category_name'] ?? ''),
+          phone: searchResult['phone'] ?? '',
+          placeUrl: searchResult['place_url'] ?? '',
+          priceRange: '중간',
+          rating: 4.0 + (searchResult['id'].hashCode % 10) / 10, // 임시 평점
+          likes: 50 + (searchResult['id'].hashCode % 100),
+          reviews: [],
+          images: [_getCategoryImage(searchResult['category_name'] ?? '')],
+          createdAt: DateTime.now(),
+          reviewCount: searchResult['id'].hashCode % 50,
+          isOpen: true,
+          hasParking: searchResult['id'].hashCode % 2 == 0,
+          hasDelivery: searchResult['id'].hashCode % 3 == 0,
+        );
+      }).toList();
+
+      filteredRestaurants = List.from(restaurants);
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('검색 결과 변환 오류: $e');
+      setState(() {
+        _isLoading = false;
+        restaurants = [];
+        filteredRestaurants = [];
+      });
+    }
+  }
+
+  // 카테고리에서 음식 타입 추출
+  List<String> _parseFoodTypesFromCategory(String category) {
+    List<String> parts = category.split(' > ');
+    if (parts.length > 1) {
+      return [parts[1]];
+    } else if (parts.isNotEmpty) {
+      return [parts[0]];
+    }
+    return ['기타'];
+  }
+
+  // 카테고리에 따른 이미지 반환
+  String _getCategoryImage(String category) {
+    if (category.contains('고기') || category.contains('삼겹살')) {
+      return 'assets/samgyupsal.png';
+    } else if (category.contains('갈비')) {
+      return 'assets/myung_jin.png';
+    } else if (category.contains('족발') || category.contains('보쌈')) {
+      return 'assets/onki.png';
+    } else if (category.contains('카페') || category.contains('커피')) {
+      return 'assets/cafe.png';
+    } else if (category.contains('중식')) {
+      return 'assets/chinese.png';
+    } else if (category.contains('일식')) {
+      return 'assets/japanese.png';
+    } else if (category.contains('분식')) {
+      return 'assets/bunsik.png';
+    } else {
+      return 'assets/restaurant.png';
+    }
     // 선택된 카테고리가 있으면 초기 필터 설정
     if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
       _currentFilters = {
@@ -153,6 +287,7 @@ class _ListScreenState extends State<ListScreen> {
         lng = _parseDouble(item['lng']);
       }
 
+      // 카카오 API 형태의 데이터인 경우 변환
       return Restaurant(
         id: item['_id'] ?? item['id'] ?? '',
         name: item['name'] ?? '',
@@ -267,6 +402,349 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
+  void _applyFilters(Map<String, dynamic> filters) {
+    setState(() {
+      _currentFilters = filters;
+      filteredRestaurants = restaurants.where((restaurant) {
+        bool matches = true;
+
+        // 가격대 필터링
+        if (filters['priceRange'] != null) {
+          String filterRange = filters['priceRange'];
+          String restaurantRange = restaurant.priceRange;
+
+          // 필터 매핑
+          Map<String, String> priceMapping = {
+            'low': '저렴',
+            'medium': '중간',
+            'high': '고가',
+          };
+
+          String mappedFilter = priceMapping[filterRange] ?? filterRange;
+          matches = matches && (restaurantRange == mappedFilter);
+        }
+
+        // 평점 필터링
+        if (filters['minRating'] != null) {
+          matches = matches && restaurant.rating >= filters['minRating'];
+        }
+
+        // 카테고리 필터링
+        if (filters['categories'] != null && filters['categories'].isNotEmpty) {
+          bool categoryMatch = false;
+          for (String category in filters['categories']) {
+            if (restaurant.categoryName.contains(category) ||
+                restaurant.foodTypes.contains(category)) {
+              categoryMatch = true;
+              break;
+            }
+          }
+          matches = matches && categoryMatch;
+        }
+
+        return matches;
+      }).toList();
+
+      // 정렬 적용
+      String sortBy = filters['sortBy'] ?? 'rating';
+      switch (sortBy) {
+        case 'rating':
+          filteredRestaurants.sort((a, b) => b.rating.compareTo(a.rating));
+          break;
+        case 'reviews':
+          filteredRestaurants.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
+          break;
+        case 'distance':
+        // 거리순 정렬 (현재는 임의로 정렬)
+          filteredRestaurants.sort((a, b) => a.name.compareTo(b.name));
+          break;
+      }
+    });
+  }
+
+  void _showErrorSnackBar(String message) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void toggleExpanded(int index) {
+    setState(() {
+      if (_expandedIndices.contains(index)) {
+        _expandedIndices.remove(index);
+      } else {
+        _expandedIndices.add(index);
+      }
+    });
+  }
+
+  // 검색 결과 처리
+  void _handleSearchResults(List<Restaurant> results) {
+    setState(() {
+      restaurants = results;
+      filteredRestaurants = List.from(restaurants);
+    });
+  }
+
+  // 검색 모드 변경
+  void _handleSearchModeChanged(bool isSearchMode) {
+    setState(() {
+      _isSearchMode = isSearchMode;
+      if (!isSearchMode) {
+        _loadRestaurants();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // 현재 선택된 카테고리에 따른 타이틀 설정
+    String appBarTitle = '인하대 후문 맛집';
+    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
+      appBarTitle = '인하대 후문 ${widget.selectedCategory} 맛집';
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _isSearchMode ? '검색 결과' : '맛집 목록',
+          style: theme.textTheme.titleLarge,
+        ),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(72),
+          child: Column(
+            children: [
+              // 검색바
+              CustomSearchBar(
+                onSearchResults: _handleSearchResults,
+                currentLat: _currentLat,
+                currentLng: _currentLng,
+                isSearchMode: _isSearchMode,
+                onSearchModeChanged: _handleSearchModeChanged,
+                initialSearchText: widget.initialSearchText ?? widget.searchKeyword ?? '',
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // 검색 결과 표시
+          if (_isSearchMode)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                '검색 결과 (${filteredRestaurants.length}개)',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          // 필터 섹션
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: theme.cardColor,
+            child: Filter(
+              onFilterChanged: _applyFilters,
+              initialFilters: _currentFilters, // 초기 필터 전달
+            ),
+          ),
+
+          // 음식점 목록
+          Expanded(
+            child: _isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          _isSearchMode ? '검색 중...' : '맛집 정보를 불러오는 중...',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  )
+                : filteredRestaurants.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isSearchMode ? Icons.search_off : Icons.restaurant,
+                              size: 80,
+                              color: theme.hintColor,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              _isSearchMode ? '검색 결과가 없습니다' : '조건에 맞는 맛집이 없습니다',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.hintColor,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              _isSearchMode ? '다른 키워드로 검색해보세요' : '필터 조건을 변경해보세요',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.hintColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _isSearchMode
+                            ? () async {
+                                setState(() {
+                                  filteredRestaurants = List.from(restaurants);
+                                });
+                                return;
+                              }
+                            : _loadRestaurants,
+                        child: ListView.builder(
+                          itemCount: filteredRestaurants.length,
+                          itemBuilder: (context, index) {
+                            final restaurant = filteredRestaurants[index];
+                            final isExpanded = _expandedIndices.contains(index);
+
+                  return Column(
+                    children: [
+                      // 광고 또는 일반 식당 카드
+                      restaurant.isAd
+                          ? ListViewAd(
+                        restaurant: restaurant,
+                        isExpanded: isExpanded,
+                        onTap: () => toggleExpanded(index),
+                      )
+                          : ListViewRt(
+                        restaurant: restaurant,
+                        isExpanded: isExpanded,
+                        onTap: () => toggleExpanded(index),
+                      ),
+
+                      // 확장된 상세 정보
+                      if (isExpanded)
+                        AnimatedContainer(
+                          duration: _animationDuration,
+                          curve: Curves.easeInOut,
+                          color: Colors.white,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              RtImage(images: restaurant.images.isNotEmpty
+                                  ? restaurant.images
+                                  : ['assets/restaurant.png']),
+                              RtInformation(
+                                likes: restaurant.likes,
+                                reviewCount: restaurant.reviews.length,
+                                restaurant: restaurant,
+                                onMapPressed: () {
+                                  // 지도 탭으로 이동하면서 음식점 정보 전달
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => HomeTab(
+                                        initialTab: 1,
+                                        selectedRestaurant: restaurant,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              RtReviewList(reviews: restaurant.reviews),
+                              SizedBox(height: _bottomSpacing),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 인하대 후문 주변 더미 데이터
   List<Restaurant> _getInhaDummyRestaurants() {
     return [
@@ -298,7 +776,7 @@ class _ListScreenState extends State<ListScreen> {
         isOpen: true,
         hasParking: false,
         hasDelivery: true,
-        isAd: true,
+        isAd: true, // 광고 표시
       ),
       Restaurant(
         id: '2',
@@ -360,239 +838,5 @@ class _ListScreenState extends State<ListScreen> {
         hasWifi: true,
       ),
     ];
-  }
-
-  void _applyFilters(Map<String, dynamic> filters) {
-    setState(() {
-      _currentFilters = filters;
-      filteredRestaurants = restaurants.where((restaurant) {
-        bool matches = true;
-
-        // 가격대 필터링
-        if (filters['priceRange'] != null) {
-          String filterRange = filters['priceRange'];
-          String restaurantRange = restaurant.priceRange;
-
-          Map<String, String> priceMapping = {
-            'low': '저렴',
-            'medium': '중간',
-            'high': '고가',
-          };
-
-          String mappedFilter = priceMapping[filterRange] ?? filterRange;
-          matches = matches && (restaurantRange == mappedFilter);
-        }
-
-        // 평점 필터링
-        if (filters['minRating'] != null) {
-          matches = matches && restaurant.rating >= filters['minRating'];
-        }
-
-        // 카테고리 필터링
-        if (filters['categories'] != null && filters['categories'].isNotEmpty) {
-          bool categoryMatch = false;
-          for (String category in filters['categories']) {
-            if (restaurant.categoryName.contains(category) ||
-                restaurant.foodTypes.contains(category)) {
-              categoryMatch = true;
-              break;
-            }
-          }
-          matches = matches && categoryMatch;
-        }
-
-        return matches;
-      }).toList();
-
-      // 정렬 적용
-      String sortBy = filters['sortBy'] ?? 'rating';
-      switch (sortBy) {
-        case 'rating':
-          filteredRestaurants.sort((a, b) => b.rating.compareTo(a.rating));
-          break;
-        case 'reviews':
-          filteredRestaurants.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
-          break;
-        case 'distance':
-          filteredRestaurants.sort((a, b) => a.name.compareTo(b.name));
-          break;
-      }
-    });
-  }
-
-  void _showErrorSnackBar(String message) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void toggleExpanded(int index) {
-    setState(() {
-      if (_expandedIndices.contains(index)) {
-        _expandedIndices.remove(index);
-      } else {
-        _expandedIndices.add(index);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // 현재 선택된 카테고리에 따른 타이틀 설정
-    String appBarTitle = '인하대 후문 맛집';
-    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
-      appBarTitle = '인하대 후문 ${widget.selectedCategory} 맛집';
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          appBarTitle,
-          style: theme.textTheme.titleLarge,
-        ),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // 필터 섹션
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: theme.cardColor,
-            child: Filter(
-              onFilterChanged: _applyFilters,
-              initialFilters: _currentFilters, // 초기 필터 전달
-            ),
-          ),
-
-          // 음식점 목록
-          Expanded(
-            child: _isLoading
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    '인하대 후문 맛집 정보를 불러오는 중...',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            )
-                : filteredRestaurants.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.restaurant,
-                    size: 80,
-                    color: theme.hintColor,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    '조건에 맞는 맛집이 없습니다',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.hintColor,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    '필터 조건을 변경해보세요',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.hintColor,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : RefreshIndicator(
-              onRefresh: _loadRestaurants,
-              child: ListView.builder(
-                itemCount: filteredRestaurants.length,
-                itemBuilder: (context, index) {
-                  final restaurant = filteredRestaurants[index];
-                  final isExpanded = _expandedIndices.contains(index);
-
-                  return Column(
-                    children: [
-                      // 광고 또는 일반 식당 카드
-                      restaurant.isAd
-                          ? ListViewAd(
-                        restaurant: restaurant,
-                        isExpanded: isExpanded,
-                        onTap: () => toggleExpanded(index),
-                      )
-                          : ListViewRt(
-                        restaurant: restaurant,
-                        isExpanded: isExpanded,
-                        onTap: () => toggleExpanded(index),
-                      ),
-
-                      // 확장된 상세 정보
-                      if (isExpanded)
-                        AnimatedContainer(
-                          duration: _animationDuration,
-                          curve: Curves.easeInOut,
-                          color: Colors.white,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              RtImage(images: restaurant.images.isNotEmpty
-                                  ? restaurant.images
-                                  : ['assets/restaurant.png']),
-                              RtInformation(
-                                likes: restaurant.likes,
-                                reviewCount: restaurant.reviews.length,
-                                restaurant: restaurant,
-                                onMapPressed: () {
-                                  // 지도 탭으로 이동하면서 음식점 정보 전달
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MainScreen(
-                                        initialTab: 1,
-                                        selectedRestaurant: restaurant,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              RtReviewList(reviews: restaurant.reviews),
-                              SizedBox(height: _bottomSpacing),
-                            ],
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
-    );
   }
 }
