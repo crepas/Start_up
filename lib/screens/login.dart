@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'Find_Password.dart';
-import 'Signup.dart';
+import 'signup.dart';
 import 'package:start_up/utils/api_config.dart';
 import '../screens/HomeTab.dart';
 class LoginScreen extends StatefulWidget {
