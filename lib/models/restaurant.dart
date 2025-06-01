@@ -1,4 +1,13 @@
-// models/food.dart
+/// restaurant.dart
+/// 음식점 정보를 담는 데이터 모델 클래스
+/// 
+/// 주요 기능:
+/// - 음식점 기본 정보 관리 (이름, 주소, 좌표 등)
+/// - 음식점 상세 정보 관리 (평점, 리뷰, 이미지 등)
+/// - JSON 직렬화/역직렬화
+/// - 데이터 유효성 검사
+/// - 더미 데이터 생성
+
 import 'package:flutter/material.dart';
 
 class Restaurant {

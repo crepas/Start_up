@@ -1,3 +1,13 @@
+/// FoodCategoryBar.dart
+/// 음식 카테고리를 표시하는 상단 바 위젯
+/// 
+/// 주요 기능:
+/// - 음식 카테고리 버튼 표시 (한식, 중식, 일식, 양식, 카페, 전체)
+/// - 카테고리 선택 상태 관리
+/// - 선택된 카테고리 하이라이트 효과
+/// - 가로 스크롤 지원
+/// - 이모지와 아이콘을 사용한 시각적 표현
+
 import 'package:flutter/material.dart';
 
 class FoodCategoryBar extends StatefulWidget {

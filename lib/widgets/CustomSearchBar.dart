@@ -1,3 +1,14 @@
+/// CustomSearchBar.dart
+/// 커스텀 검색 바 위젯
+/// 
+/// 주요 기능:
+/// - 검색어 입력 및 검색 실행
+/// - 검색 결과 표시
+/// - 검색 모드 전환
+/// - 위치 기반 검색
+/// - 검색 히스토리 관리
+/// - 자동완성 기능
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

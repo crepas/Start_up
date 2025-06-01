@@ -570,61 +570,61 @@ class _ListScreenState extends State<ListScreen> {
           Expanded(
             child: _isLoading
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          _isSearchMode ? '검색 중...' : '맛집 정보를 불러오는 중...',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  )
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    _isSearchMode ? '검색 중...' : '맛집 정보를 불러오는 중...',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            )
                 : filteredRestaurants.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _isSearchMode ? Icons.search_off : Icons.restaurant,
-                              size: 80,
-                              color: theme.hintColor,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              _isSearchMode ? '검색 결과가 없습니다' : '조건에 맞는 맛집이 없습니다',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.hintColor,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              _isSearchMode ? '다른 키워드로 검색해보세요' : '필터 조건을 변경해보세요',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.hintColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _isSearchMode
-                            ? () async {
-                                setState(() {
-                                  filteredRestaurants = List.from(restaurants);
-                                });
-                                return;
-                              }
-                            : _loadRestaurants,
-                        child: ListView.builder(
-                          itemCount: filteredRestaurants.length,
-                          itemBuilder: (context, index) {
-                            final restaurant = filteredRestaurants[index];
-                            final isExpanded = _expandedIndices.contains(index);
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _isSearchMode ? Icons.search_off : Icons.restaurant,
+                    size: 80,
+                    color: theme.hintColor,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    _isSearchMode ? '검색 결과가 없습니다' : '조건에 맞는 맛집이 없습니다',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    _isSearchMode ? '다른 키워드로 검색해보세요' : '필터 조건을 변경해보세요',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : RefreshIndicator(
+              onRefresh: _isSearchMode
+                  ? () async {
+                setState(() {
+                  filteredRestaurants = List.from(restaurants);
+                });
+                return;
+              }
+                  : _loadRestaurants,
+              child: ListView.builder(
+                itemCount: filteredRestaurants.length,
+                itemBuilder: (context, index) {
+                  final restaurant = filteredRestaurants[index];
+                  final isExpanded = _expandedIndices.contains(index);
 
                   return Column(
                     children: [
@@ -671,7 +671,7 @@ class _ListScreenState extends State<ListScreen> {
                                 },
                               ),
                               RtReviewList(reviews: restaurant.reviews),
-                              SizedBox(height: _bottomSpacing),
+                              
                             ],
                           ),
                         ),

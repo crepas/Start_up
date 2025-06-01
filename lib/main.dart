@@ -123,7 +123,7 @@ class MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
-      home: MainScreen(),
+      home: ListScreen(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

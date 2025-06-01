@@ -1,3 +1,15 @@
+/// MenuTab.dart
+/// 메뉴 화면을 구현한 탭
+/// 
+/// 주요 기능:
+/// - 사용자 프로필 표시
+/// - 즐겨찾기 음식점 관리
+/// - 최근 검색어 관리
+/// - 앱 설정 관리
+/// - 알림 설정
+/// - 앱 정보 표시
+/// - 로그아웃 기능
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;

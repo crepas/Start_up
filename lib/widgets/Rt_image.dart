@@ -94,7 +94,7 @@ class _RtImageState extends State<RtImage> {
         width: imageSize,
         height: imageSize,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          borderRadius: BorderRadius.circular(screenWidth * 0.01),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
@@ -127,7 +127,7 @@ class _RtImageState extends State<RtImage> {
           minScale: 1,
           maxScale: 3,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.04),
+            borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.01),
             child: _buildImage(widget.images[index], imageSize),
           ),
         );

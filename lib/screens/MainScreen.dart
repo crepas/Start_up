@@ -591,11 +591,11 @@ class _MainScreenState extends State<MainScreen> {
   // 음식점 섹션 빌드
   Widget _buildRestaurantSection(String title, String category) {
     final theme = Theme.of(context);
-    final restaurants = _currentCategory == 'all' 
+    final restaurants = _currentCategory == 'all'
         ? _getRestaurantsByCategory(category)
         : _currentCategory == category.toLowerCase()
-            ? _getRestaurantsByCategory(category)
-            : [];
+        ? _getRestaurantsByCategory(category)
+        : [];
 
     if (restaurants.isEmpty) {
       return SizedBox.shrink(); // 해당 카테고리 음식점이 없으면 섹션 숨김
