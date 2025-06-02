@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/BottomNavBar.dart';
 import '../widgets/ListView_AD.dart';
 import '../widgets/ListView_RT.dart';
 import '../widgets/Filter.dart';
@@ -12,7 +11,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../utils/api_config.dart';
-import 'HomeTab.dart';
+import 'MainScreen.dart';
+import 'MapTab.dart';
+import 'MenuTab.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -60,6 +61,7 @@ class _ListScreenState extends State<ListScreen> {
   @override
   void initState() {
     super.initState();
+    print('ListScreen 초기화 - selectedCategory: ${widget.selectedCategory}');
     _initScreen();
   }
 
@@ -71,6 +73,14 @@ class _ListScreenState extends State<ListScreen> {
   // 화면 초기화
   Future<void> _initScreen() async {
     await _getCurrentLocation();
+
+    // 선택된 카테고리가 있으면 초기 필터 설정
+    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
+      _currentFilters = {
+        'categories': [widget.selectedCategory!],
+      };
+      print('초기 카테고리 필터 설정: ${widget.selectedCategory}');
+    }
 
     // 검색 결과가 있으면 검색 모드로 시작
     if (widget.searchKeyword != null && widget.searchResults != null) {
@@ -181,14 +191,6 @@ class _ListScreenState extends State<ListScreen> {
     } else {
       return 'assets/restaurant.png';
     }
-    // 선택된 카테고리가 있으면 초기 필터 설정
-    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
-      _currentFilters = {
-        'sortBy': 'rating',
-        'categories': [widget.selectedCategory],
-      };
-    }
-    _loadRestaurants();
   }
 
   Future<void> _loadRestaurants() async {
@@ -225,7 +227,6 @@ class _ListScreenState extends State<ListScreen> {
       );
 
       print('API 응답 상태: ${response.statusCode}');
-      print('API 응답 본문: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -235,12 +236,14 @@ class _ListScreenState extends State<ListScreen> {
             restaurants = (data['restaurants'] as List)
                 .map((item) => _convertToRestaurant(item))
                 .toList();
+
+            print('로드된 전체 음식점 수: ${restaurants.length}');
+
             // 초기 필터 적용
             _applyInitialFilters();
             _isLoading = false;
           });
 
-          print('로드된 음식점 수: ${restaurants.length}');
           print('데이터 소스: ${data['source'] ?? 'database'}');
         } else {
           throw Exception('No restaurants data in response');
@@ -260,12 +263,25 @@ class _ListScreenState extends State<ListScreen> {
     }
   }
 
-  // 초기 필터 적용
-  void _applyInitialFilters() {
+  // 초기 필터 적용 - 수정됨
+  Future<void> _applyInitialFilters() async {
+    print('초기 필터 적용 시작');
+    print('현재 필터: $_currentFilters');
+    print('선택된 카테고리: ${widget.selectedCategory}');
+
+    // selectedCategory가 있으면 해당 카테고리로 필터링
+    if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
+      _currentFilters['categories'] = [widget.selectedCategory!];
+      print('카테고리 필터 적용: ${widget.selectedCategory}');
+    }
+
     if (_currentFilters.isNotEmpty) {
       _applyFilters(_currentFilters);
     } else {
-      filteredRestaurants = List.from(restaurants);
+      setState(() {
+        filteredRestaurants = List.from(restaurants);
+      });
+      print('필터 없음 - 전체 음식점 표시: ${filteredRestaurants.length}개');
     }
   }
 
@@ -402,11 +418,95 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  void _applyFilters(Map<String, dynamic> filters) {
+  void _applyFilters(Map<String, dynamic> filters) async {
+    print('필터 적용 시작: $filters');
+
+    // UI를 먼저 업데이트하고 필터링은 비동기로 처리
     setState(() {
       _currentFilters = filters;
-      filteredRestaurants = restaurants.where((restaurant) {
+    });
+
+    // 필터링을 별도 함수로 분리하여 비동기 처리
+    final filtered = await _performFiltering(filters);
+
+    if (mounted) {
+      setState(() {
+        filteredRestaurants = filtered;
+      });
+    }
+  }
+
+  // 실제 필터링 로직을 별도 함수로 분리
+  Future<List<Restaurant>> _performFiltering(Map<String, dynamic> filters) async {
+    return await Future.microtask(() {
+      List<Restaurant> filtered = restaurants.where((restaurant) {
         bool matches = true;
+
+        // 필터에서 선택된 카테고리 필터링 (가장 중요한 필터)
+        if (filters['categories'] != null && filters['categories'].isNotEmpty) {
+          bool filterCategoryMatch = false;
+          for (String category in filters['categories']) {
+            bool categoryMatch = false;
+
+            // 카테고리명에서 필터링
+            bool categoryNameMatch = restaurant.categoryName.toLowerCase().contains(category.toLowerCase());
+
+            // foodTypes에서 필터링
+            bool foodTypeMatch = restaurant.foodTypes.any((type) =>
+                type.toLowerCase().contains(category.toLowerCase()));
+
+            // 세부 카테고리 매칭
+            bool detailMatch = false;
+            switch (category) {
+              case '한식':
+                detailMatch = restaurant.categoryName.contains('한식') ||
+                    restaurant.categoryName.contains('한국') ||
+                    restaurant.categoryName.contains('김치') ||
+                    restaurant.categoryName.contains('불고기') ||
+                    restaurant.categoryName.contains('갈비') ||
+                    restaurant.foodTypes.any((type) => ['한식', '한국음식', '김치', '불고기', '갈비', '비빔밥', '냉면'].contains(type));
+                break;
+              case '중식':
+                detailMatch = restaurant.categoryName.contains('중식') ||
+                    restaurant.categoryName.contains('중국') ||
+                    restaurant.categoryName.contains('짜장') ||
+                    restaurant.categoryName.contains('탕수육') ||
+                    restaurant.foodTypes.any((type) => ['중식', '중국음식', '짜장면', '탕수육', '짬뽕', '볶음밥'].contains(type));
+                break;
+              case '일식':
+                detailMatch = restaurant.categoryName.contains('일식') ||
+                    restaurant.categoryName.contains('일본') ||
+                    restaurant.categoryName.contains('초밥') ||
+                    restaurant.categoryName.contains('라멘') ||
+                    restaurant.categoryName.contains('우동') ||
+                    restaurant.foodTypes.any((type) => ['일식', '일본음식', '초밥', '라멘', '돈까스', '우동', '덮밥'].contains(type));
+                break;
+              case '양식':
+                detailMatch = restaurant.categoryName.contains('양식') ||
+                    restaurant.categoryName.contains('서양') ||
+                    restaurant.categoryName.contains('파스타') ||
+                    restaurant.categoryName.contains('피자') ||
+                    restaurant.categoryName.contains('스테이크') ||
+                    restaurant.foodTypes.any((type) => ['양식', '서양음식', '파스타', '피자', '스테이크', '햄버거', '샐러드'].contains(type));
+                break;
+              case '카페':
+                detailMatch = restaurant.categoryName.contains('카페') ||
+                    restaurant.categoryName.contains('커피') ||
+                    restaurant.categoryName.contains('디저트') ||
+                    restaurant.categoryName.contains('베이커리') ||
+                    restaurant.foodTypes.any((type) => ['카페', '커피', '디저트', '베이커리', '케이크', '빵'].contains(type));
+                break;
+            }
+
+            categoryMatch = categoryNameMatch || foodTypeMatch || detailMatch;
+
+            if (categoryMatch) {
+              filterCategoryMatch = true;
+              break;
+            }
+          }
+          matches = matches && filterCategoryMatch;
+        }
 
         // 가격대 필터링
         if (filters['priceRange'] != null) {
@@ -429,19 +529,6 @@ class _ListScreenState extends State<ListScreen> {
           matches = matches && restaurant.rating >= filters['minRating'];
         }
 
-        // 카테고리 필터링
-        if (filters['categories'] != null && filters['categories'].isNotEmpty) {
-          bool categoryMatch = false;
-          for (String category in filters['categories']) {
-            if (restaurant.categoryName.contains(category) ||
-                restaurant.foodTypes.contains(category)) {
-              categoryMatch = true;
-              break;
-            }
-          }
-          matches = matches && categoryMatch;
-        }
-
         return matches;
       }).toList();
 
@@ -449,16 +536,21 @@ class _ListScreenState extends State<ListScreen> {
       String sortBy = filters['sortBy'] ?? 'rating';
       switch (sortBy) {
         case 'rating':
-          filteredRestaurants.sort((a, b) => b.rating.compareTo(a.rating));
+          filtered.sort((a, b) => b.rating.compareTo(a.rating));
           break;
         case 'reviews':
-          filteredRestaurants.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
+          filtered.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
           break;
         case 'distance':
         // 거리순 정렬 (현재는 임의로 정렬)
-          filteredRestaurants.sort((a, b) => a.name.compareTo(b.name));
+          filtered.sort((a, b) => a.name.compareTo(b.name));
           break;
       }
+
+      print('전체 음식점: ${restaurants.length}개');
+      print('카테고리 "${filters['categories']}" 필터링 결과: ${filtered.length}개');
+
+      return filtered;
     });
   }
 
@@ -503,6 +595,39 @@ class _ListScreenState extends State<ListScreen> {
     });
   }
 
+  // 네비게이션 처리 함수
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0: // 홈
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(initialTab: 0),
+          ),
+              (route) => false,
+        );
+        break;
+      case 1: // 지도
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(initialTab: 1),
+          ),
+              (route) => false,
+        );
+        break;
+      case 2: // 메뉴
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(initialTab: 2),
+          ),
+              (route) => false,
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -517,7 +642,7 @@ class _ListScreenState extends State<ListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _isSearchMode ? '검색 결과' : '맛집 목록',
+          _isSearchMode ? '검색 결과' : appBarTitle,
           style: theme.textTheme.titleLarge,
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -549,6 +674,21 @@ class _ListScreenState extends State<ListScreen> {
               color: colorScheme.primary.withOpacity(0.1),
               child: Text(
                 '검색 결과 (${filteredRestaurants.length}개)',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          // 카테고리 결과 표시
+          if (widget.selectedCategory != null && widget.selectedCategory != '전체' && !_isSearchMode)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                '${widget.selectedCategory} 음식점 (${filteredRestaurants.length}개)',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -659,14 +799,15 @@ class _ListScreenState extends State<ListScreen> {
                                 restaurant: restaurant,
                                 onMapPressed: () {
                                   // 지도 탭으로 이동하면서 음식점 정보 전달
-                                  Navigator.pushReplacement(
+                                  Navigator.pushAndRemoveUntil(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => HomeTab(
+                                      builder: (context) => MainScreen(
                                         initialTab: 1,
                                         selectedRestaurant: restaurant,
                                       ),
                                     ),
+                                        (route) => false,
                                   );
                                 },
                               ),
@@ -683,13 +824,24 @@ class _ListScreenState extends State<ListScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBar(
+      bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _handleNavigation,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: '지도',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: '메뉴',
+          ),
+        ],
+        selectedItemColor: colorScheme.primary,
       ),
     );
   }

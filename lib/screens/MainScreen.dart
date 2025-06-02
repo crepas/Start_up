@@ -51,6 +51,18 @@ class _MainScreenState extends State<MainScreen> {
     _loadRestaurants(); // 음식점 데이터 로드
   }
 
+  // 화면 생명주기: 다른 화면에서 돌아왔을 때 호출
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 홈 탭이 선택되었을 때 전체 카테고리로 초기화
+    if (_currentIndex == 0) {
+      setState(() {
+        _currentCategory = 'all';
+      });
+    }
+  }
+
   // 현재 위치 가져오기
   Future<void> _getCurrentLocation() async {
     try {
@@ -88,7 +100,12 @@ class _MainScreenState extends State<MainScreen> {
               searchResults: results.map((r) => r.toMap()).toList(),
             ),
           ),
-        );
+        ).then((_) {
+          // ListScreen에서 돌아왔을 때 전체 카테고리로 초기화
+          setState(() {
+            _currentCategory = 'all';
+          });
+        });
       }
     });
   }
@@ -100,68 +117,121 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // 카테고리 선택 시 해당 카테고리로 검색
-  Future<void> _searchByCategory(String category) async {
-    if (category.trim().isEmpty) return;
-
+  // 데이터베이스에서 카테고리별 음식점 검색 - 수정된 부분
+  Future<void> _searchByCategoryFromDatabase(String category) async {
     try {
-      final apiKey = '4e4572f409f9b0cd5dc1f574779a03a7';
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final baseUrl = getServerUrl();
+
+      // 모든 음식점을 가져온 후 클라이언트에서 필터링
+      final queryParams = {
+        'lat': inhaBackGateLat.toString(),
+        'lng': inhaBackGateLng.toString(),
+        'radius': '2000', // 2km 반경
+        'limit': '50',
+        'sort': 'rating',
+      };
+
+      final uri = Uri.parse('$baseUrl/restaurants').replace(
+        queryParameters: queryParams,
+      );
+
+      print('카테고리 검색 API 호출: $uri');
 
       final response = await http.get(
-        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=$category&x=$_currentLng&y=$_currentLat&radius=5000&size=15'),
+        uri,
         headers: {
-          'Authorization': 'KakaoAK $apiKey',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
         },
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> documents = data['documents'];
 
-        List<Restaurant> searchRestaurants = documents.map((doc) {
-          Map<String, dynamic> searchResult = doc as Map<String, dynamic>;
-          return Restaurant(
-            id: searchResult['id']?.toString() ?? '',
-            name: searchResult['place_name'] ?? '',
-            address: searchResult['address_name'] ?? '',
-            roadAddress: searchResult['road_address_name'] ?? '',
-            lat: double.tryParse(searchResult['y'] ?? '0') ?? 0,
-            lng: double.tryParse(searchResult['x'] ?? '0') ?? 0,
-            categoryName: searchResult['category_name'] ?? '',
-            foodTypes: [category],
-            phone: searchResult['phone'] ?? '',
-            placeUrl: searchResult['place_url'] ?? '',
-            priceRange: '중간',
-            rating: 4.0 + (searchResult['id'].hashCode % 10) / 10,
-            likes: 50 + (searchResult['id'].hashCode % 100),
-            reviews: [],
-            images: ['assets/restaurant.png'],
-            createdAt: DateTime.now(),
-            reviewCount: searchResult['id'].hashCode % 50,
-            isOpen: true,
-            hasParking: searchResult['id'].hashCode % 2 == 0,
-            hasDelivery: searchResult['id'].hashCode % 3 == 0,
-          );
-        }).toList();
+        if (data['restaurants'] != null) {
+          List<Restaurant> allRestaurants = (data['restaurants'] as List)
+              .map((item) => _convertToRestaurant(item))
+              .toList();
 
-        if (searchRestaurants.isNotEmpty) {
-          // 검색 결과가 있으면 ListScreen으로 이동
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ListScreen(
-                searchKeyword: category,
-                searchResults: searchRestaurants.map((r) => r.toMap()).toList(),
-                initialSearchText: category, // 초기 검색어 설정
+          // 카테고리에 따라 필터링 (더 정확한 필터링)
+          List<Restaurant> categoryRestaurants = allRestaurants.where((restaurant) {
+            // 카테고리명에서 필터링
+            bool categoryMatch = restaurant.categoryName.toLowerCase().contains(category.toLowerCase());
+
+            // foodTypes에서 필터링
+            bool foodTypeMatch = restaurant.foodTypes.any((type) =>
+                type.toLowerCase().contains(category.toLowerCase()));
+
+            // 세부 카테고리 매칭
+            bool detailMatch = false;
+            switch (category) {
+              case '한식':
+                detailMatch = restaurant.categoryName.contains('한식') ||
+                    restaurant.categoryName.contains('한국') ||
+                    restaurant.foodTypes.any((type) => ['한식', '한국', '김치', '불고기', '갈비'].contains(type));
+                break;
+              case '중식':
+                detailMatch = restaurant.categoryName.contains('중식') ||
+                    restaurant.categoryName.contains('중국') ||
+                    restaurant.categoryName.contains('짜장') ||
+                    restaurant.foodTypes.any((type) => ['중식', '중국', '짜장면', '탕수육'].contains(type));
+                break;
+              case '일식':
+                detailMatch = restaurant.categoryName.contains('일식') ||
+                    restaurant.categoryName.contains('일본') ||
+                    restaurant.categoryName.contains('초밥') ||
+                    restaurant.categoryName.contains('라멘') ||
+                    restaurant.foodTypes.any((type) => ['일식', '일본', '초밥', '라멘', '돈까스'].contains(type));
+                break;
+              case '양식':
+                detailMatch = restaurant.categoryName.contains('양식') ||
+                    restaurant.categoryName.contains('서양') ||
+                    restaurant.categoryName.contains('파스타') ||
+                    restaurant.categoryName.contains('피자') ||
+                    restaurant.foodTypes.any((type) => ['양식', '서양', '파스타', '피자', '스테이크'].contains(type));
+                break;
+              case '카페':
+                detailMatch = restaurant.categoryName.contains('카페') ||
+                    restaurant.categoryName.contains('커피') ||
+                    restaurant.categoryName.contains('디저트') ||
+                    restaurant.foodTypes.any((type) => ['카페', '커피', '디저트', '베이커리'].contains(type));
+                break;
+            }
+
+            return categoryMatch || foodTypeMatch || detailMatch;
+          }).toList();
+
+          print('전체 음식점: ${allRestaurants.length}개');
+          print('${category} 카테고리 필터링 후: ${categoryRestaurants.length}개');
+
+          if (categoryRestaurants.isNotEmpty) {
+            // ListScreen으로 이동
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ListScreen(
+                  selectedCategory: category,
+                  searchResults: categoryRestaurants.map((r) => r.toMap()).toList(),
+                  initialSearchText: category,
+                ),
               ),
-            ),
-          );
+            ).then((_) {
+              // ListScreen에서 돌아왔을 때 전체 카테고리로 초기화
+              setState(() {
+                _currentCategory = 'all';
+              });
+            });
+          } else {
+            _showErrorSnackBar('${category} 음식점이 없습니다.');
+          }
         }
       } else {
-        _showErrorSnackBar('검색 중 오류가 발생했습니다.');
+        throw Exception('Failed to load restaurants: ${response.statusCode}');
       }
     } catch (e) {
-      print('검색 오류: $e');
+      print('카테고리 검색 오류: $e');
       _showErrorSnackBar('검색 중 오류가 발생했습니다.');
     }
   }
@@ -470,10 +540,15 @@ class _MainScreenState extends State<MainScreen> {
       MaterialPageRoute(
         builder: (context) => ListScreen(selectedCategory: category),
       ),
-    );
+    ).then((_) {
+      // ListScreen에서 돌아왔을 때 전체 카테고리로 초기화
+      setState(() {
+        _currentCategory = 'all';
+      });
+    });
   }
 
-  // 카테고리 선택 처리
+  // 카테고리 선택 처리 - 수정된 부분
   void _handleCategorySelected(String category) {
     setState(() {
       _currentCategory = category;
@@ -490,7 +565,8 @@ class _MainScreenState extends State<MainScreen> {
         'western': '양식',
         'cafe': '카페',
       };
-      _searchByCategory(categoryMap[category] ?? category);
+      // 데이터베이스에서 카테고리별 검색으로 변경
+      _searchByCategoryFromDatabase(categoryMap[category] ?? category);
     }
   }
 
@@ -500,7 +576,11 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return _buildHomeTabContent();
       case 1:
-        return MapTab(selectedRestaurant: widget.selectedRestaurant);
+      // 홈에서 지도로 이동할 때는 내 위치로, 리스트에서 올 때는 선택된 음식점으로
+        return MapTab(
+          selectedRestaurant: widget.selectedRestaurant,
+          resetToMyLocation: widget.selectedRestaurant == null, // 선택된 음식점이 없으면 내 위치로
+        );
       case 2:
         return MenuTab();
       default:
@@ -776,6 +856,10 @@ class _MainScreenState extends State<MainScreen> {
         onTap: (index) {
           setState(() {
             _currentIndex = index;
+            // 홈 탭으로 이동할 때 전체 카테고리로 초기화
+            if (index == 0) {
+              _currentCategory = 'all';
+            }
           });
         },
         items: [
