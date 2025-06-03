@@ -35,6 +35,11 @@ class _MainScreenState extends State<MainScreen> {
   List<Restaurant> _searchResults = []; // 검색 결과
   String _currentCategory = 'all'; // 현재 선택된 카테고리
 
+  // 지도 상태 관리
+  bool _isFirstMapLoad = true; // 최초 지도 로드인지 확인
+  Restaurant? _mapSelectedRestaurant; // 지도에 전달할 선택된 음식점
+  String _mapKey = 'map_initial'; // 지도 위젯 키 관리
+
   // 현재 위치 좌표
   double _currentLat = 37.4516;
   double _currentLng = 126.7015;
@@ -47,6 +52,13 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+
+    // 초기 탭이 지도이고 선택된 음식점이 있는 경우에만 설정
+    if (widget.initialTab == 1 && widget.selectedRestaurant != null) {
+      _mapSelectedRestaurant = widget.selectedRestaurant;
+      _isFirstMapLoad = false; // 특정 음식점으로 이동하는 경우
+    }
+
     _getCurrentLocation(); // 현재 위치 가져오기
     _loadRestaurants(); // 음식점 데이터 로드
   }
@@ -576,10 +588,11 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return _buildHomeTabContent();
       case 1:
-      // 홈에서 지도로 이동할 때는 내 위치로, 리스트에서 올 때는 선택된 음식점으로
+      // 지도 탭 - 안정적인 키 관리
         return MapTab(
-          selectedRestaurant: widget.selectedRestaurant,
-          resetToMyLocation: widget.selectedRestaurant == null, // 선택된 음식점이 없으면 내 위치로
+          key: ValueKey(_mapKey), // 안정적인 키 사용
+          selectedRestaurant: _mapSelectedRestaurant,
+          resetToMyLocation: _mapSelectedRestaurant == null, // 선택된 음식점이 없으면 내 위치로
         );
       case 2:
         return MenuTab();
@@ -855,7 +868,19 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
+            // 탭 전환 시 지도 상태 초기화
+            if (index == 1) {
+              // 지도 탭으로 전환할 때
+              if (_currentIndex != 1) {
+                // 다른 탭에서 지도로 전환하는 경우에만 초기화
+                _mapSelectedRestaurant = null; // 선택된 음식점 제거
+                _isFirstMapLoad = true; // 내 위치로 포커스
+                _mapKey = 'map_reset_${DateTime.now().millisecondsSinceEpoch}'; // 지도 리셋 시에만 키 변경
+              }
+            }
+
             _currentIndex = index;
+
             // 홈 탭으로 이동할 때 전체 카테고리로 초기화
             if (index == 0) {
               _currentCategory = 'all';
