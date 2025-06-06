@@ -135,7 +135,7 @@ class _ListScreenState extends State<ListScreen> {
           placeUrl: searchResult['place_url'] ?? '',
           priceRange: '중간',
           rating: 4.0 + (searchResult['id'].hashCode % 10) / 10, // 임시 평점
-          likes: 50 + (searchResult['id'].hashCode % 100),
+          likes: _parseInt(searchResult['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
           reviews: [],
           images: [_getCategoryImage(searchResult['category_name'] ?? '')],
           createdAt: DateTime.now(),
@@ -317,7 +317,7 @@ class _ListScreenState extends State<ListScreen> {
         placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
         priceRange: item['priceRange'] ?? '중간',
         rating: _parseDouble(item['rating'] ?? 0),
-        likes: _parseInt(item['likes'] ?? 0),
+        likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
         reviews: _parseReviews(item['reviews'] ?? []),
         images: _parseImages(item['images'] ?? []),
         createdAt: _parseDateTime(item['createdAt']),
@@ -407,7 +407,7 @@ class _ListScreenState extends State<ListScreen> {
       placeUrl: item['placeUrl']?.toString() ?? '',
       priceRange: '중간',
       rating: 4.0,
-      likes: 50,
+      likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용 (기본값 0)
       reviews: [],
       images: ['assets/restaurant.png'],
       createdAt: DateTime.now(),
@@ -812,7 +812,7 @@ class _ListScreenState extends State<ListScreen> {
                                 },
                               ),
                               RtReviewList(reviews: restaurant.reviews),
-                              
+
                             ],
                           ),
                         ),
@@ -913,7 +913,7 @@ class _ListScreenState extends State<ListScreen> {
         placeUrl: '',
         priceRange: '저렴',
         rating: 4.1,
-        likes: 95,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [
           Review(
             username: '중식러버',
@@ -943,7 +943,7 @@ class _ListScreenState extends State<ListScreen> {
         placeUrl: '',
         priceRange: '중간',
         rating: 4.3,
-        likes: 76,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [
           Review(
             username: '고기사랑',
@@ -972,7 +972,7 @@ class _ListScreenState extends State<ListScreen> {
         placeUrl: '',
         priceRange: '저렴',
         rating: 4.0,
-        likes: 120,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [
           Review(
             username: '커피매니아',

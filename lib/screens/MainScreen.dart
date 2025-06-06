@@ -333,7 +333,7 @@ class _MainScreenState extends State<MainScreen> {
         placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
         priceRange: item['priceRange'] ?? '중간',
         rating: _parseDouble(item['rating'] ?? 0),
-        likes: _parseInt(item['likes'] ?? 0),
+        likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
         reviews: _parseReviews(item['reviews'] ?? []),
         images: _parseImages(item['images'] ?? []),
         createdAt: _parseDateTime(item['createdAt']),
@@ -417,7 +417,7 @@ class _MainScreenState extends State<MainScreen> {
       placeUrl: item['placeUrl']?.toString() ?? '',
       priceRange: '중간',
       rating: 4.0,
-      likes: 50,
+      likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용 (기본값 0)
       reviews: [],
       images: ['assets/restaurant.png'],
       createdAt: DateTime.now(),
@@ -444,7 +444,7 @@ class _MainScreenState extends State<MainScreen> {
         placeUrl: '',
         priceRange: '저렴',
         rating: 4.1,
-        likes: 95,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
         createdAt: DateTime.now().subtract(Duration(days: 60)),
@@ -466,7 +466,7 @@ class _MainScreenState extends State<MainScreen> {
         placeUrl: '',
         priceRange: '중간',
         rating: 4.3,
-        likes: 76,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
         createdAt: DateTime.now().subtract(Duration(days: 30)),
@@ -488,7 +488,7 @@ class _MainScreenState extends State<MainScreen> {
         placeUrl: '',
         priceRange: '저렴',
         rating: 4.0,
-        likes: 120,
+        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
         createdAt: DateTime.now().subtract(Duration(days: 90)),
