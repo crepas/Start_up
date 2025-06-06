@@ -1,6 +1,6 @@
 /// MenuTab.dart
 /// 메뉴 화면을 구현한 탭
-/// 
+///
 /// 주요 기능:
 /// - 사용자 프로필 표시
 /// - 즐겨찾기 음식점 관리
@@ -335,7 +335,7 @@ class _MenuTabState extends State<MenuTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return SafeArea(
       child: Column(
         children: [

@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await UserApi.instance.loginWithKakaoAccount();
       }
-      
+
       final user = await UserApi.instance.me();
       if (user != null) {
         // 카카오 로그인 성공 시 서버에 토큰 전송
@@ -315,14 +315,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading
                             ? CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
-                              )
+                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                        )
                             : Text(
-                                '로그인',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: colorScheme.onPrimary,
-                                ),
-                              ),
+                          '로그인',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onPrimary,
+                          ),
+                        ),
                       ),
                     ),
 

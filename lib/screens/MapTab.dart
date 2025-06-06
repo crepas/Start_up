@@ -9,6 +9,7 @@
 /// - 마커 클릭 시 상세 정보 표시
 /// - 지도 줌 레벨 조정
 /// - 위치 기반 음식점 검색
+/// - 뒤로가기 버튼으로 포커스 리셋
 
 import 'dart:async';
 import 'dart:developer';
@@ -44,6 +45,8 @@ class _MapTabState extends State<MapTab> {
   bool _isLoading = true;
   bool _isLoadingRestaurants = false;
   double _currentZoom = 14.0; // 현재 줌 레벨 추적
+  bool _isFocusedOnRestaurant = false; // 특정 음식점에 포커스되어 있는지 여부
+  Restaurant? _focusedRestaurant; // 현재 포커스된 음식점
 
   // 인하대 후문 정확한 좌표 (인천 미추홀구 용현동)
   final double inhaBackGateLat = 37.45169;
@@ -60,6 +63,13 @@ class _MapTabState extends State<MapTab> {
   void initState() {
     super.initState();
     _isLoading = false;
+
+    // 선택된 음식점이 있으면 포커스 상태로 설정
+    if (widget.selectedRestaurant != null && !widget.resetToMyLocation) {
+      _isFocusedOnRestaurant = true;
+      _focusedRestaurant = widget.selectedRestaurant;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getCurrentLocation(); // 내 위치 먼저 가져오기
       _fetchRestaurantsFromDatabase();
@@ -81,6 +91,43 @@ class _MapTabState extends State<MapTab> {
       await _addMyLocationMarker();
     }
   }
+
+  // 포커스 리셋 함수 - 내 위치로 돌아가기
+  void _resetFocus() {
+    setState(() {
+      _isFocusedOnRestaurant = false;
+      _focusedRestaurant = null;
+    });
+
+    // 내 위치로 지도 이동
+    _moveToMyLocation();
+
+    // 선택된 음식점 마커 제거 후 일반 마커로 다시 추가
+    if (_mapController != null && widget.selectedRestaurant != null) {
+      _removeSelectedRestaurantMarker();
+    }
+  }
+
+  // 선택된 음식점 마커 제거
+  Future<void> _removeSelectedRestaurantMarker() async {
+    if (_mapController == null || widget.selectedRestaurant == null) return;
+
+    try {
+      // 선택된 음식점 마커 제거
+      await _mapController!.clearOverlays(type: NOverlayType.marker);
+
+      // 모든 마커 다시 추가
+      await _addRestaurantMarkers();
+
+      // 내 위치 마커도 다시 추가
+      if (_myLat != null && _myLng != null) {
+        await _addMyLocationMarker();
+      }
+    } catch (e) {
+      print('선택된 음식점 마커 제거 실패: $e');
+    }
+  }
+
   Future<void> _fetchRestaurantsFromDatabase() async {
     if (_isLoadingRestaurants) return;
 
@@ -588,15 +635,25 @@ class _MapTabState extends State<MapTab> {
               color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
               child: Row(
                 children: [
-                  Text(
-                    '인하대 후문 맛집 지도',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                  // 뒤로가기 버튼 (포커스된 상태일 때만 표시)
+                  if (_isFocusedOnRestaurant)
+                    IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: _resetFocus,
+                      tooltip: '목록으로 돌아가기',
+                    ),
+                  Expanded(
+                    child: Text(
+                      _isFocusedOnRestaurant && _focusedRestaurant != null
+                          ? _focusedRestaurant!.name
+                          : '인하대 후문 맛집 지도',
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                     ),
                   ),
-                  Spacer(),
                   IconButton(
                     icon: Icon(Icons.refresh),
                     onPressed: () async {
