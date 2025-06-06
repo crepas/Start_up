@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:start_up/screens/MainScreen.dart';
 import '../widgets/KakaoLogin.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'Find_Password.dart';
 import 'signup.dart';
 import 'package:start_up/utils/api_config.dart';
-import '../screens/HomeTab.dart';
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeTab()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       } else {
         final responseData = jsonDecode(response.body);
@@ -137,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeTab()),
+            MaterialPageRoute(builder: (context) => MainScreen()),
           );
         } else {
           throw Exception('Failed to login with Kakao');

@@ -1,10 +1,9 @@
-// lib/services/reviewService.dart
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../utils/api_config.dart';
 
-class RestaurantSservice {
+class RestaurantService {
   // 서버 URL 가져오기
   static final String baseUrl = getServerUrl();
 
@@ -17,6 +16,84 @@ class RestaurantSservice {
       'Content-Type': 'application/json',
       'Authorization': token != null ? 'Bearer $token' : '',
     };
+  }
+
+  // 좋아요 토글 (추가/취소)
+  Future<Map<String, dynamic>> toggleLike(String restaurantId) async {
+    try {
+      final headers = await _getHeaders();
+
+      if (headers['Authorization'] == 'Bearer ') {
+        return {
+          'success': false,
+          'error': '로그인이 필요합니다.'
+        };
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/restaurants/$restaurantId/like'),
+        headers: headers,
+      );
+
+      print('좋아요 토글 응답 상태: ${response.statusCode}');
+      print('좋아요 토글 응답 본문: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': data['message'],
+          'likes': data['likes'],
+          'isLiked': data['isLiked'],
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': errorData['message'] ?? '좋아요 처리에 실패했습니다.'
+        };
+      }
+    } catch (e) {
+      print('좋아요 토글 오류: $e');
+      return {
+        'success': false,
+        'error': '네트워크 오류가 발생했습니다.'
+      };
+    }
+  }
+
+  // 좋아요 상태 확인
+  Future<Map<String, dynamic>> getLikeStatus(String restaurantId) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/restaurants/$restaurantId/like/status'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'isLiked': data['isLiked'] ?? false,
+          'likes': data['likes'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'isLiked': false,
+          'likes': 0,
+        };
+      }
+    } catch (e) {
+      print('좋아요 상태 확인 오류: $e');
+      return {
+        'success': false,
+        'isLiked': false,
+        'likes': 0,
+      };
+    }
   }
 
   // 리뷰 추가 (RestaurantService와 동일한 엔드포인트 사용)
@@ -194,40 +271,6 @@ class RestaurantSservice {
       return {
         'success': false,
         'error': '네트워크 오류가 발생했습니다.'
-      };
-    }
-  }
-
-  // 좋아요 상태 확인 (기존 코드와 호환)
-  static Future<Map<String, dynamic>> getLikeStatus(String restaurantId) async {
-    try {
-      final headers = await _getHeaders();
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/restaurants/$restaurantId/like/status'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'isLiked': data['isLiked'] ?? false,
-          'likes': data['likes'] ?? 0,
-        };
-      } else {
-        return {
-          'success': false,
-          'isLiked': false,
-          'likes': 0,
-        };
-      }
-    } catch (e) {
-      print('좋아요 상태 확인 오류: $e');
-      return {
-        'success': false,
-        'isLiked': false,
-        'likes': 0,
       };
     }
   }

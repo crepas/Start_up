@@ -5,9 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/restaurant.dart';
-import '../services/api_config.dart';
-import '../services/likeService.dart'; // 위에서 만든 LikeService import
-import '../services/restaurant_service.dart'; // ReviewService import 추가
+import '../utils/api_config.dart';
+import '../services/restaurant_service.dart'; // RestaurantService 사용
 import '../widgets/ReviewSheetContainer.dart'; // 기존 리뷰 위젯 import
 
 class RtInformation extends StatefulWidget {
@@ -37,11 +36,13 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
   bool isInitialized = false;
   late AnimationController _heartController;
   late Animation<double> _heartAnimation;
+  late RestaurantService _restaurantService;
 
   @override
   void initState() {
     super.initState();
     currentLikes = widget.likes;
+    _restaurantService = RestaurantService();
 
     // 하트 애니메이션 컨트롤러
     _heartController = AnimationController(
@@ -67,51 +68,20 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
     super.dispose();
   }
 
-  // 초기 좋아요 상태 확인
+  // 초기 좋아요 상태 확인 - 일단 간단하게 초기화만
   Future<void> _checkInitialLikeStatus() async {
-    if (widget.restaurant == null) return;
+    if (widget.restaurant == null) {
+      setState(() {
+        isInitialized = true;
+      });
+      return;
+    }
 
     try {
-      // getLikeStatus가 매개변수를 받지 않는다면 다른 방법 사용
-      // 또는 직접 API 호출
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-
-      if (token == null) {
-        setState(() {
-          isInitialized = true;
-        });
-        return;
-      }
-
-      final baseUrl = getServerUrl();
-      final response = await http.get(
-        Uri.parse('$baseUrl/likes/status/${widget.restaurant!.id}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            liked = data['isLiked'] ?? false;
-            // 서버에서 받아온 최신 좋아요 수로 업데이트
-            if (data['likes'] != null) {
-              currentLikes = data['likes'];
-            }
-            isInitialized = true;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            isInitialized = true;
-          });
-        }
-      }
+      // 일단 초기화만 하고, 나중에 좋아요 상태 확인 API가 준비되면 추가
+      setState(() {
+        isInitialized = true;
+      });
     } catch (e) {
       print('좋아요 상태 확인 오류: $e');
       if (mounted) {
@@ -122,7 +92,7 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
     }
   }
 
-  // 좋아요 토글 함수 (실제 API 호출)
+  // 좋아요 토글 함수 (RestaurantService 사용)
   Future<void> toggleLike() async {
     if (isProcessing || widget.restaurant == null) return;
 
@@ -133,37 +103,22 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
     try {
       HapticFeedback.lightImpact();
 
-      Map<String, dynamic> result;
+      // RestaurantService의 toggleLike 사용
+      final result = await _restaurantService.toggleLike(widget.restaurant!.id);
 
-      if (liked) {
-        // 좋아요 취소
-        result = await LikeService.unlikeRestaurant(
-          restaurantId: widget.restaurant!.id,
-          restaurantName: widget.restaurant!.name,
-        );
-      } else {
-        // 좋아요 추가
-        result = await LikeService.likeRestaurant(
-          restaurantId: widget.restaurant!.id,
-          restaurantName: widget.restaurant!.name,
-        );
-
-        // 하트 애니메이션 실행
-        _heartController.forward().then((_) {
-          _heartController.reverse();
-        });
-      }
-
-      if (result['success'] == true) {
+      if (mounted) {
         setState(() {
-          liked = !liked;
-          // 서버에서 반환된 좋아요 수가 있으면 사용, 없으면 로컬에서 계산
-          if (result['likes'] != null) {
-            currentLikes = result['likes'];
-          } else {
-            currentLikes = liked ? currentLikes + 1 : currentLikes - 1;
-          }
+          // API 응답에서 현재 좋아요 상태와 수를 받아옴
+          liked = result['isLiked'] ?? !liked;
+          currentLikes = result['likes'] ?? currentLikes;
         });
+
+        // 하트 애니메이션 실행 (좋아요 추가일 때만)
+        if (liked) {
+          _heartController.forward().then((_) {
+            _heartController.reverse();
+          });
+        }
 
         // 부모 위젯에 좋아요 수 변경 알림
         if (widget.onLikesChanged != null) {
@@ -171,38 +126,26 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
         }
 
         // 성공 메시지 표시
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                liked
-                    ? '${widget.restaurant!.name}을(를) 좋아요에 추가했습니다! ❤️'
-                    : '${widget.restaurant!.name} 좋아요를 취소했습니다.',
-              ),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              liked
+                  ? '${widget.restaurant!.name}을(를) 좋아요에 추가했습니다! ❤️'
+                  : '${widget.restaurant!.name} 좋아요를 취소했습니다.',
             ),
-          );
-        }
-      } else {
-        // 실패 시 에러 메시지
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('좋아요 처리 중 오류가 발생했습니다: ${result['error'] ?? '알 수 없는 오류'}'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       print('좋아요 처리 오류: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.'),
+            content: Text('서버에서 오류가 발생했습니다: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }
