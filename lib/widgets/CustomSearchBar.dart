@@ -134,11 +134,11 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             placeUrl: searchResult['place_url'] ?? '',
             priceRange: '중간',
             rating: 4.0 + (searchResult['id'].hashCode % 10) / 10,
-            likes: 50 + (searchResult['id'].hashCode % 100),
+            likes: 0, // ← 이렇게 수정!
             reviews: [],
             images: [_getCategoryImage(searchResult['category_name'] ?? '')],
             createdAt: DateTime.now(),
-            reviewCount: searchResult['id'].hashCode % 50,
+            reviewCount: 0,
             isOpen: true,
             hasParking: searchResult['id'].hashCode % 2 == 0,
             hasDelivery: searchResult['id'].hashCode % 3 == 0,

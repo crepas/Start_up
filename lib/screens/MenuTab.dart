@@ -21,6 +21,7 @@ import '../screens/favorites_screen.dart';
 import '../screens/visit_history_screen.dart';
 import '../screens/app_settings.dart';
 import '../screens/review_management.dart';
+import 'ai_recommendation_screen.dart';
 
 class MenuTab extends StatefulWidget {
   @override
@@ -106,6 +107,16 @@ class _MenuTabState extends State<MenuTab> {
         'onTap': () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('고객 지원 기능은 준비 중입니다')),
+          );
+        },
+      },
+      {
+        'title': 'AI 추천',
+        'icon': Icons.smart_toy,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AIRecommendationScreen()),
           );
         },
       },

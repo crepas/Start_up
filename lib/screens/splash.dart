@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:start_up/screens/MainScreen.dart';
 import 'dart:async';
-import '../screens/HomeTab.dart';
 import '../screens/login.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => isLoggedIn ? HomeTab() : LoginScreen(),
+          builder: (context) => isLoggedIn ? MainScreen() : LoginScreen(),
         ),
       );
     });
