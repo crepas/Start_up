@@ -812,7 +812,7 @@ class _ListScreenState extends State<ListScreen> {
                                 },
                               ),
                               RtReviewList(reviews: restaurant.reviews),
-                              
+
                             ],
                           ),
                         ),

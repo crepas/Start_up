@@ -228,7 +228,7 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
   Widget _buildReviewCard(Map<String, dynamic> review) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     final String restaurantName = review['restaurantName'] ?? '식당 이름 없음';
     final int rating = review['rating'] ?? 0;
     final String content = review['content'] ?? '내용 없음';
@@ -318,7 +318,7 @@ class _ReviewManagementTabState extends State<ReviewManagementTab> with SingleTi
   void _showErrorSnackBar(String message) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
