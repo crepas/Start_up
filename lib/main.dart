@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:start_up/screens/HomeTab.dart';
 import 'package:start_up/screens/ListScreen.dart';
 import 'package:start_up/screens/MainScreen.dart';
 import 'package:start_up/screens/MenuTab.dart';
@@ -61,7 +60,7 @@ class _AuthCheckState extends State<AuthCheck> {
     if (_isLoading) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     } else {
-      return _isLoggedIn ? HomeTab() : LoginScreen();
+      return _isLoggedIn ? MainScreen() : LoginScreen();
     }
   }
 }
@@ -127,7 +126,7 @@ class MyAppState extends State<MyApp> {
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
-        '/main': (context) => HomeTab(),
+        '/main': (context) => MainScreen(),
         '/list': (context) => ListScreen(),
       },
     );
