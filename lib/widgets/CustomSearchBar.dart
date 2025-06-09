@@ -133,7 +133,6 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             phone: searchResult['phone'] ?? '',
             placeUrl: searchResult['place_url'] ?? '',
             priceRange: '중간',
-            rating: 4.0 + (searchResult['id'].hashCode % 10) / 10,
             likes: 0, // ← 이렇게 수정!
             reviews: [],
             images: [_getCategoryImage(searchResult['category_name'] ?? '')],
