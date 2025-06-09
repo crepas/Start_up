@@ -203,24 +203,7 @@ class _ListViewRtState extends State<ListViewRt> {
               ),
 
               // 좋아요 버튼
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() {
-                    isFavorite = !isFavorite;
-                  });
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: EdgeInsets.all(screenWidth * 0.01),
-                  child: Image.asset(
-                    isFavorite ? 'assets/Heart_P.png' : 'assets/Heart_G.png',
-                    width: screenWidth * 0.06,
-                    height: screenWidth * 0.06,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),
