@@ -207,20 +207,20 @@ class _ListScreenState extends State<ListScreen> {
       final token = prefs.getString('token');
       final baseUrl = getServerUrl();
 
-      // 더 넓은 범위와 더 많은 데이터 요청
+      // MapTab과 완전히 동일한 파라미터 사용
       final queryParams = {
         'lat': inhaBackGateLat.toString(),
         'lng': inhaBackGateLng.toString(),
-        'radius': '5000', // 5km로 확대
-        'limit': '100', // 100개로 증가
-        'sort': 'likes',
+        'radius': '2000', // 2km 반경
+        'limit': '120', // MapTab과 동일하게 120개
+        'sort': 'distance', // MapTab과 동일한 정렬
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
         queryParameters: queryParams,
       );
 
-      print('API 호출 URL: $uri');
+      print('리스트 화면 API 호출 URL: $uri');
 
       final response = await http.get(
         uri,
@@ -243,11 +243,7 @@ class _ListScreenState extends State<ListScreen> {
 
             print('로드된 전체 음식점 수: ${restaurants.length}');
 
-            // 데이터가 적으면 더미 데이터 추가
-            if (restaurants.length < 10) {
-              print('더미 데이터 추가 후: ${restaurants.length}개');
-            }
-
+            // 초기 필터 적용
             _applyInitialFilters();
             _isLoading = false;
           });
@@ -295,7 +291,7 @@ class _ListScreenState extends State<ListScreen> {
   // 서버 응답 데이터를 Restaurant 객체로 변환하는 함수
   Restaurant _convertToRestaurant(Map<String, dynamic> item) {
     try {
-      // MongoDB location.coordinates 형식 처리
+      // MongoDB location.coordinates 형식 처리 - MapTab과 동일
       double lat = inhaBackGateLat; // 기본값
       double lng = inhaBackGateLng; // 기본값
 
@@ -310,8 +306,6 @@ class _ListScreenState extends State<ListScreen> {
         lng = _parseDouble(item['lng']);
       }
 
-      List<Review> reviews = _parseReviews(item['reviews'] ?? []);
-
       return Restaurant(
         id: item['_id'] ?? item['id'] ?? '',
         name: item['name'] ?? '',
@@ -325,10 +319,10 @@ class _ListScreenState extends State<ListScreen> {
         placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
         priceRange: item['priceRange'] ?? '중간',
         likes: _parseInt(item['likes'] ?? 0),
-        reviews: reviews,
+        reviews: _parseReviews(item['reviews'] ?? []),
         images: _parseImages(item['images'] ?? []),
         createdAt: _parseDateTime(item['createdAt']),
-        reviewCount: reviews.length,
+        reviewCount: _parseInt(item['reviewCount'] ?? 0),
         isOpen: item['isOpen'] ?? true,
         hasParking: item['hasParking'] ?? false,
         hasDelivery: item['hasDelivery'] ?? false,
@@ -336,6 +330,7 @@ class _ListScreenState extends State<ListScreen> {
       );
     } catch (e) {
       print('데이터 변환 오류: $e');
+      print('문제가 된 데이터: $item');
       return _createFallbackRestaurant(item);
     }
   }
@@ -364,28 +359,28 @@ class _ListScreenState extends State<ListScreen> {
   List<String> _parseFoodTypes(dynamic value) {
     if (value == null) return ['기타'];
     if (value is List) {
-      return value.map((e) => e.toString()).toList();
+      return value.map((item) => item.toString()).toList();
+    }
+    if (value is String) {
+      return [value];
     }
     return ['기타'];
   }
 
   List<Review> _parseReviews(dynamic value) {
     if (value == null || value is! List) return [];
-    try {
-      return (value as List)
-          .map((reviewData) => Review.fromJson(reviewData))
-          .toList();
-    } catch (e) {
-      print('리뷰 파싱 오류: $e');
-      return [];
-    }
+    // 리뷰 파싱 로직 추가 가능
+    return [];
   }
 
   List<String> _parseImages(dynamic value) {
     if (value == null) return ['assets/restaurant.png'];
     if (value is List) {
-      final images = value.map((e) => e.toString()).toList();
-      return images.isEmpty ? ['assets/restaurant.png'] : images;
+      List<String> images = value.map((item) => item.toString()).toList();
+      return images.isNotEmpty ? images : ['assets/restaurant.png'];
+    }
+    if (value is String) {
+      return [value];
     }
     return ['assets/restaurant.png'];
   }
@@ -401,7 +396,7 @@ class _ListScreenState extends State<ListScreen> {
   // 변환 실패 시 사용할 기본 Restaurant 객체 생성
   Restaurant _createFallbackRestaurant(Map<String, dynamic> item) {
     return Restaurant(
-      id: item['_id']?.toString() ?? item['id']?.toString() ?? 'unknown',
+      id: item['_id'] ?? item['id'] ?? 'unknown',
       name: item['name']?.toString() ?? '음식점',
       address: item['address']?.toString() ?? '인하대 후문 근처',
       roadAddress: item['roadAddress']?.toString() ?? '',
