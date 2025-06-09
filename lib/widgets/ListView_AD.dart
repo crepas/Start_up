@@ -6,11 +6,13 @@ class ListViewAd extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onTap;
 
+
   const ListViewAd({
     Key? key,
     required this.restaurant,
     required this.isExpanded,
     required this.onTap,
+
   }) : super(key: key);
 
   @override

@@ -396,7 +396,6 @@ class _MapTabState extends State<MapTab> {
           'categoryName': restaurant.categoryName,
           'address': restaurant.address,
           'phone': restaurant.phone,
-          'rating': restaurant.rating,
           'likes': restaurant.likes,
         });
       });

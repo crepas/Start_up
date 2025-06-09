@@ -1,3 +1,5 @@
+import 'dart:math' as Math;
+
 import 'package:flutter/material.dart';
 import '../widgets/ListView_AD.dart';
 import '../widgets/ListView_RT.dart';
@@ -14,6 +16,7 @@ import '../utils/api_config.dart';
 import 'MainScreen.dart';
 import 'MapTab.dart';
 import 'MenuTab.dart';
+import 'dart:math';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -134,7 +137,6 @@ class _ListScreenState extends State<ListScreen> {
           phone: searchResult['phone'] ?? '',
           placeUrl: searchResult['place_url'] ?? '',
           priceRange: '중간',
-          rating: 4.0 + (searchResult['id'].hashCode % 10) / 10, // 임시 평점
           likes: _parseInt(searchResult['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
           reviews: [],
           images: searchResult['images'] != null && (searchResult['images'] as List).isNotEmpty
@@ -205,13 +207,13 @@ class _ListScreenState extends State<ListScreen> {
       final token = prefs.getString('token');
       final baseUrl = getServerUrl();
 
-      // 인하대 후문 중심으로 데이터 요청
+      // 더 넓은 범위와 더 많은 데이터 요청
       final queryParams = {
         'lat': inhaBackGateLat.toString(),
         'lng': inhaBackGateLng.toString(),
-        'radius': '2000', // 2km 반경
-        'limit': '50',
-        'sort': 'rating',
+        'radius': '5000', // 5km로 확대
+        'limit': '100', // 100개로 증가
+        'sort': 'likes',
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
@@ -241,7 +243,11 @@ class _ListScreenState extends State<ListScreen> {
 
             print('로드된 전체 음식점 수: ${restaurants.length}');
 
-            // 초기 필터 적용
+            // 데이터가 적으면 더미 데이터 추가
+            if (restaurants.length < 10) {
+              print('더미 데이터 추가 후: ${restaurants.length}개');
+            }
+
             _applyInitialFilters();
             _isLoading = false;
           });
@@ -257,8 +263,6 @@ class _ListScreenState extends State<ListScreen> {
       print('음식점 목록 로드 오류: $e');
       setState(() {
         _isLoading = false;
-        // 오류 발생 시 더미 데이터로 초기화
-        restaurants = _getInhaDummyRestaurants();
         _applyInitialFilters();
       });
       _showErrorSnackBar('서버에서 데이터를 불러올 수 없어 샘플 데이터를 표시합니다.');
@@ -273,17 +277,18 @@ class _ListScreenState extends State<ListScreen> {
 
     // selectedCategory가 있으면 해당 카테고리로 필터링
     if (widget.selectedCategory != null && widget.selectedCategory != '전체') {
-      _currentFilters['categories'] = [widget.selectedCategory!];
-      print('카테고리 필터 적용: ${widget.selectedCategory}');
-    }
-
-    if (_currentFilters.isNotEmpty) {
-      _applyFilters(_currentFilters);
+      // 필터를 새로 설정하고 바로 적용
+      Map<String, dynamic> categoryFilter = {
+        'categories': [widget.selectedCategory!],
+        'sortBy': 'likes', // 기본 정렬
+      };
+      _applyFilters(categoryFilter);
     } else {
-      setState(() {
-        filteredRestaurants = List.from(restaurants);
-      });
-      print('필터 없음 - 전체 음식점 표시: ${filteredRestaurants.length}개');
+      // 전체 카테고리인 경우 정렬만 적용
+      Map<String, dynamic> defaultFilter = {
+        'sortBy': 'likes',
+      };
+      _applyFilters(defaultFilter);
     }
   }
 
@@ -305,7 +310,8 @@ class _ListScreenState extends State<ListScreen> {
         lng = _parseDouble(item['lng']);
       }
 
-      // 카카오 API 형태의 데이터인 경우 변환
+      List<Review> reviews = _parseReviews(item['reviews'] ?? []);
+
       return Restaurant(
         id: item['_id'] ?? item['id'] ?? '',
         name: item['name'] ?? '',
@@ -318,12 +324,11 @@ class _ListScreenState extends State<ListScreen> {
         phone: item['phone'] ?? '',
         placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
         priceRange: item['priceRange'] ?? '중간',
-        rating: _parseDouble(item['rating'] ?? 0),
-        likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
-        reviews: _parseReviews(item['reviews'] ?? []),
+        likes: _parseInt(item['likes'] ?? 0),
+        reviews: reviews,
         images: _parseImages(item['images'] ?? []),
         createdAt: _parseDateTime(item['createdAt']),
-        reviewCount: _parseInt(item['reviewCount'] ?? 0),
+        reviewCount: reviews.length,
         isOpen: item['isOpen'] ?? true,
         hasParking: item['hasParking'] ?? false,
         hasDelivery: item['hasDelivery'] ?? false,
@@ -331,7 +336,6 @@ class _ListScreenState extends State<ListScreen> {
       );
     } catch (e) {
       print('데이터 변환 오류: $e');
-      print('문제가 된 데이터: $item');
       return _createFallbackRestaurant(item);
     }
   }
@@ -408,8 +412,7 @@ class _ListScreenState extends State<ListScreen> {
       phone: item['phone']?.toString() ?? '',
       placeUrl: item['placeUrl']?.toString() ?? '',
       priceRange: '중간',
-      rating: 4.0,
-      likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용 (기본값 0)
+      likes: _parseInt(item['likes'] ?? 0),
       reviews: [],
       images: ['assets/restaurant.png'],
       createdAt: DateTime.now(),
@@ -423,9 +426,9 @@ class _ListScreenState extends State<ListScreen> {
   void _applyFilters(Map<String, dynamic> filters) async {
     print('필터 적용 시작: $filters');
 
-    // UI를 먼저 업데이트하고 필터링은 비동기로 처리
     setState(() {
-      _currentFilters = filters;
+      _currentFilters = Map.from(filters); // 깊은 복사로 변경
+      _isLoading = true;
     });
 
     // 필터링을 별도 함수로 분리하여 비동기 처리
@@ -433,9 +436,30 @@ class _ListScreenState extends State<ListScreen> {
 
     if (mounted) {
       setState(() {
-        filteredRestaurants = filtered;
+        filteredRestaurants = List.from(filtered); // 새 리스트로 생성
+        _isLoading = false;
       });
+
+      // UI 업데이트 후 로그 출력
+      print('UI 업데이트 완료 - 표시되는 음식점 수: ${filteredRestaurants.length}');
+      if (filteredRestaurants.isNotEmpty) {
+        print('첫 번째 음식점: ${filteredRestaurants.first.name} (좋아요: ${filteredRestaurants.first.likes})');
+        print('두 번째 음식점: ${filteredRestaurants.length > 1 ? filteredRestaurants[1].name : "없음"} (좋아요: ${filteredRestaurants.length > 1 ? filteredRestaurants[1].likes : 0})');
+      }
     }
+  }
+
+
+  double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+    const R = 6371000; // 지구 반지름 (미터)
+    final dLat = (lat2 - lat1) * pi / 180;
+    final dLng = (lng2 - lng1) * pi / 180;
+
+    final a = sin(dLat/2) * sin(dLat/2) +
+        cos(lat1 * pi / 180) * cos(lat2 * pi / 180) *
+            sin(dLng/2) * sin(dLng/2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c; // 거리 (단위: m)
   }
 
   // 실제 필터링 로직을 별도 함수로 분리
@@ -444,63 +468,67 @@ class _ListScreenState extends State<ListScreen> {
       List<Restaurant> filtered = restaurants.where((restaurant) {
         bool matches = true;
 
-        // 필터에서 선택된 카테고리 필터링 (가장 중요한 필터)
+        // 카테고리 필터링 로직은 기존과 동일...
         if (filters['categories'] != null && filters['categories'].isNotEmpty) {
           bool filterCategoryMatch = false;
           for (String category in filters['categories']) {
             bool categoryMatch = false;
 
-            // 카테고리명에서 필터링
-            bool categoryNameMatch = restaurant.categoryName.toLowerCase().contains(category.toLowerCase());
-
-            // foodTypes에서 필터링
-            bool foodTypeMatch = restaurant.foodTypes.any((type) =>
-                type.toLowerCase().contains(category.toLowerCase()));
-
-            // 세부 카테고리 매칭
-            bool detailMatch = false;
             switch (category) {
               case '한식':
-                detailMatch = restaurant.categoryName.contains('한식') ||
+                categoryMatch = restaurant.categoryName.contains('한식') ||
                     restaurant.categoryName.contains('한국') ||
-                    restaurant.categoryName.contains('김치') ||
-                    restaurant.categoryName.contains('불고기') ||
+                    restaurant.categoryName.contains('고기구이') ||
+                    restaurant.categoryName.contains('족발') ||
+                    restaurant.categoryName.contains('보쌈') ||
                     restaurant.categoryName.contains('갈비') ||
-                    restaurant.foodTypes.any((type) => ['한식', '한국음식', '김치', '불고기', '갈비', '비빔밥', '냉면'].contains(type));
+                    restaurant.categoryName.contains('삼겹살') ||
+                    restaurant.categoryName.contains('분식') ||
+                    restaurant.foodTypes.any((type) =>
+                    type.contains('한식') ||
+                        type.contains('고기') ||
+                        type.contains('족발') ||
+                        type.contains('갈비') ||
+                        type.contains('분식'));
                 break;
               case '중식':
-                detailMatch = restaurant.categoryName.contains('중식') ||
+                categoryMatch = restaurant.categoryName.contains('중식') ||
                     restaurant.categoryName.contains('중국') ||
-                    restaurant.categoryName.contains('짜장') ||
-                    restaurant.categoryName.contains('탕수육') ||
-                    restaurant.foodTypes.any((type) => ['중식', '중국음식', '짜장면', '탕수육', '짬뽕', '볶음밥'].contains(type));
+                    restaurant.categoryName.contains('중화') ||
+                    restaurant.foodTypes.any((type) =>
+                    type.contains('중식') ||
+                        type.contains('짜장') ||
+                        type.contains('짬뽕'));
                 break;
               case '일식':
-                detailMatch = restaurant.categoryName.contains('일식') ||
+                categoryMatch = restaurant.categoryName.contains('일식') ||
                     restaurant.categoryName.contains('일본') ||
                     restaurant.categoryName.contains('초밥') ||
                     restaurant.categoryName.contains('라멘') ||
-                    restaurant.categoryName.contains('우동') ||
-                    restaurant.foodTypes.any((type) => ['일식', '일본음식', '초밥', '라멘', '돈까스', '우동', '덮밥'].contains(type));
+                    restaurant.foodTypes.any((type) =>
+                    type.contains('일식') ||
+                        type.contains('초밥') ||
+                        type.contains('라멘'));
                 break;
               case '양식':
-                detailMatch = restaurant.categoryName.contains('양식') ||
+                categoryMatch = restaurant.categoryName.contains('양식') ||
                     restaurant.categoryName.contains('서양') ||
                     restaurant.categoryName.contains('파스타') ||
                     restaurant.categoryName.contains('피자') ||
-                    restaurant.categoryName.contains('스테이크') ||
-                    restaurant.foodTypes.any((type) => ['양식', '서양음식', '파스타', '피자', '스테이크', '햄버거', '샐러드'].contains(type));
+                    restaurant.foodTypes.any((type) =>
+                    type.contains('양식') ||
+                        type.contains('피자') ||
+                        type.contains('파스타'));
                 break;
               case '카페':
-                detailMatch = restaurant.categoryName.contains('카페') ||
+                categoryMatch = restaurant.categoryName.contains('카페') ||
                     restaurant.categoryName.contains('커피') ||
                     restaurant.categoryName.contains('디저트') ||
-                    restaurant.categoryName.contains('베이커리') ||
-                    restaurant.foodTypes.any((type) => ['카페', '커피', '디저트', '베이커리', '케이크', '빵'].contains(type));
+                    restaurant.foodTypes.any((type) =>
+                    type.contains('카페') ||
+                        type.contains('커피'));
                 break;
             }
-
-            categoryMatch = categoryNameMatch || foodTypeMatch || detailMatch;
 
             if (categoryMatch) {
               filterCategoryMatch = true;
@@ -510,49 +538,54 @@ class _ListScreenState extends State<ListScreen> {
           matches = matches && filterCategoryMatch;
         }
 
-        // 가격대 필터링
-        if (filters['priceRange'] != null) {
-          String filterRange = filters['priceRange'];
-          String restaurantRange = restaurant.priceRange;
-
-          // 필터 매핑
-          Map<String, String> priceMapping = {
-            'low': '저렴',
-            'medium': '중간',
-            'high': '고가',
-          };
-
-          String mappedFilter = priceMapping[filterRange] ?? filterRange;
-          matches = matches && (restaurantRange == mappedFilter);
-        }
-
-        // 평점 필터링
-        if (filters['minRating'] != null) {
-          matches = matches && restaurant.rating >= filters['minRating'];
-        }
-
         return matches;
       }).toList();
 
-      // 정렬 적용
-      String sortBy = filters['sortBy'] ?? 'rating';
+      // 정렬 전 로그 (rating 제거)
+      print('정렬 전 음식점들:');
+      for (int i = 0; i < Math.min(3, filtered.length); i++) {
+        print('${i+1}. ${filtered[i].name} - 좋아요: ${filtered[i].likes}, 리뷰: ${filtered[i].reviews.length}');
+      }
+
+      // 정렬 로직에서 rating 관련 제거
+      String sortBy = filters['sortBy'] ?? 'likes';
+      print('적용할 정렬 방식: $sortBy');
+
       switch (sortBy) {
-        case 'rating':
-          filtered.sort((a, b) => b.rating.compareTo(a.rating));
+        case 'likes':
+        case '좋아요순':
+          filtered.sort((a, b) => b.likes.compareTo(a.likes));
           break;
         case 'reviews':
-          filtered.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
+        case '리뷰순':
+          filtered.sort((a, b) => b.reviews.length.compareTo(a.reviews.length));
           break;
         case 'distance':
-        // 거리순 정렬 (현재는 임의로 정렬)
+        case '거리순':
+        case '가까운순':
+        // 가까운 순으로만 정렬 (오름차순)
+          filtered.sort((a, b) {
+            final distA = calculateDistance(inhaBackGateLat, inhaBackGateLng, a.lat, a.lng);
+            final distB = calculateDistance(inhaBackGateLat, inhaBackGateLng, b.lat, b.lng);
+            return distA.compareTo(distB); // 가까운 순
+          });
+          break;
+        case 'name':
+        case '이름순':
           filtered.sort((a, b) => a.name.compareTo(b.name));
+          break;
+        default:
+          filtered.sort((a, b) => b.likes.compareTo(a.likes));
           break;
       }
 
-      print('전체 음식점: ${restaurants.length}개');
-      print('카테고리 "${filters['categories']}" 필터링 결과: ${filtered.length}개');
+      // 정렬 후 로그 (rating 제거)
+      print('정렬 후 음식점들:');
+      for (int i = 0; i < Math.min(3, filtered.length); i++) {
+        print('${i+1}. ${filtered[i].name} - 좋아요: ${filtered[i].likes}, 리뷰: ${filtered[i].reviews.length}');
+      }
 
-      return filtered;
+      return List.from(filtered);
     });
   }
 
@@ -724,7 +757,13 @@ class _ListScreenState extends State<ListScreen> {
             color: theme.cardColor,
             child: Filter(
               onFilterChanged: _applyFilters,
-              initialFilters: _currentFilters, // 초기 필터 전달
+              initialFilters: {
+                // 카테고리가 선택된 경우 해당 카테고리를 초기값으로 설정
+                if (widget.selectedCategory != null && widget.selectedCategory != '전체')
+                  'categories': [widget.selectedCategory!],
+                'sortBy': 'likes', // 기본 정렬값 명시적 설정
+                ..._currentFilters, // 기존 필터도 유지
+              },
             ),
           ),
 
@@ -917,100 +956,5 @@ class _ListScreenState extends State<ListScreen> {
         ],
       ),
     );
-  }
-
-  // 인하대 후문 주변 더미 데이터
-  List<Restaurant> _getInhaDummyRestaurants() {
-    return [
-      Restaurant(
-        id: '1',
-        name: '인하반점',
-        address: '인천 미추홀구 용현동 산1-1',
-        roadAddress: '인천 미추홀구 인하로 12',
-        lat: 37.4495,
-        lng: 126.7012,
-        categoryName: '음식점 > 중식 > 중화요리',
-        foodTypes: ['중식', '짜장면'],
-        phone: '032-867-0582',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.1,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [
-          Review(
-            username: '중식러버',
-            comment: '짜장면 맛집! 학생들이 많이 찾는 곳이에요.',
-            rating: 4.0,
-            date: DateTime.now().subtract(Duration(days: 1)),
-          ),
-        ],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 60)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: true,
-        isAd: true, // 광고 표시
-      ),
-      Restaurant(
-        id: '2',
-        name: '후문 삼겹살',
-        address: '인천 미추홀구 용현동 618-1',
-        roadAddress: '인천 미추홀구 인하로 100',
-        lat: 37.4492,
-        lng: 126.7015,
-        categoryName: '음식점 > 한식 > 고기구이',
-        foodTypes: ['한식', '고기'],
-        phone: '032-123-4567',
-        placeUrl: '',
-        priceRange: '중간',
-        rating: 4.3,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [
-          Review(
-            username: '고기사랑',
-            comment: '후문에서 가장 맛있는 삼겹살집!',
-            rating: 4.3,
-            date: DateTime.now().subtract(Duration(days: 2)),
-          ),
-        ],
-        images: ['assets/samgyupsal.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-      ),
-      Restaurant(
-        id: '3',
-        name: '후문카페',
-        address: '인천 미추홀구 용현동 253',
-        roadAddress: '인천 미추홀구 인하로 150',
-        lat: 37.4498,
-        lng: 126.7008,
-        categoryName: '음식점 > 카페 > 커피전문점',
-        foodTypes: ['카페', '커피'],
-        phone: '032-456-7890',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.0,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [
-          Review(
-            username: '커피매니아',
-            comment: '공부하기 좋은 카페. 후문에서 가장 넓어요.',
-            rating: 4.0,
-            date: DateTime.now().subtract(Duration(hours: 12)),
-          ),
-        ],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 90)),
-        reviewCount: 1,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: false,
-        hasWifi: true,
-      ),
-    ];
   }
 }

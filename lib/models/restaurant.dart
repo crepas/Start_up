@@ -22,7 +22,6 @@ class Restaurant {
   final String phone;
   final String placeUrl;
   final String priceRange;
-  final double rating;
   final int likes;
   final List<Review> reviews;
   final List<String> images;
@@ -49,7 +48,6 @@ class Restaurant {
     required this.phone,
     required this.placeUrl,
     required this.priceRange,
-    required this.rating,
     required this.likes,
     required this.reviews,
     required this.images,
@@ -90,7 +88,6 @@ class Restaurant {
       phone: json['phone'] ?? '',
       placeUrl: json['placeUrl'] ?? '',
       priceRange: json['priceRange'] ?? '중간',
-      rating: json['rating']?.toDouble() ?? 0.0,
       likes: json['likes'] ?? 0,
       reviews: (json['reviews'] as List<dynamic>?)
           ?.map((review) => Review.fromJson(review))
@@ -124,7 +121,6 @@ class Restaurant {
       'phone': phone,
       'placeUrl': placeUrl,
       'priceRange': priceRange,
-      'rating': rating,
       'likes': likes,
       'reviews': reviews.map((review) => review.toJson()).toList(),
       'images': images,
