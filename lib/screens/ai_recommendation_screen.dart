@@ -67,7 +67,6 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
       phone: '',
       placeUrl: '',
       priceRange: '중간',
-      rating: double.tryParse(restaurant['rating']?.toString() ?? '0') ?? 0.0,
       likes: int.tryParse(restaurant['likes']?.toString() ?? '0') ?? 0,
       reviews: [],
       images: ['assets/restaurant.png'],
