@@ -28,8 +28,8 @@ class _RtReviewListState extends State<RtReviewList> {
           ...widget.reviews.map((review) {
             return Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.03,  // 좌우 여백
-                vertical: screenWidth * 0.005    // 각 리뷰 항목의 상하 여백
+                  horizontal: screenWidth * 0.03,  // 좌우 여백
+                  vertical: screenWidth * 0.005    // 각 리뷰 항목의 상하 여백
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,9 +40,9 @@ class _RtReviewListState extends State<RtReviewList> {
                       Text(
                         review.username,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.black
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.black
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.02),
@@ -50,8 +50,8 @@ class _RtReviewListState extends State<RtReviewList> {
                         child: Text(
                           truncateWithEllipsis(review.comment, 40),
                           style: TextStyle(
-                            fontSize: screenWidth * 0.033,
-                            color: Colors.black
+                              fontSize: screenWidth * 0.033,
+                              color: Colors.black
                           ),
                         ),
                       ),
@@ -64,10 +64,10 @@ class _RtReviewListState extends State<RtReviewList> {
 
           Padding(
             padding: EdgeInsets.only(
-              left: screenWidth * 0.03,    // 좌측 여백
-              right: screenWidth * 0.03,   // 우측 여백
-              top: screenWidth * 0.02,     // 상단 여백 증가
-              bottom: screenWidth * 0.002  // 하단 여백
+                left: screenWidth * 0.03,    // 좌측 여백
+                right: screenWidth * 0.03,   // 우측 여백
+                top: screenWidth * 0.02,     // 상단 여백 증가
+                bottom: screenWidth * 0.002  // 하단 여백
             ),
             child: GestureDetector(
               onTap: () {
@@ -101,8 +101,8 @@ class _RtReviewListState extends State<RtReviewList> {
                           // 하단 리뷰 입력 위젯
                           Padding(
                             padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.03,
-                              vertical: screenWidth * 0.02
+                                horizontal: screenWidth * 0.03,
+                                vertical: screenWidth * 0.02
                             ),
                             child: ReviewInputWidget(nickname: '사용자 닉네임'),
                           ),

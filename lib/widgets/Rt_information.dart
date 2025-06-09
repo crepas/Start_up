@@ -8,6 +8,7 @@ import '../models/restaurant.dart';
 import '../utils/api_config.dart';
 import '../services/restaurant_service.dart'; // RestaurantService 사용
 import '../widgets/ReviewSheetContainer.dart'; // 기존 리뷰 위젯 import
+import '../utils/api_config.dart';
 
 class RtInformation extends StatefulWidget {
   final int likes;
@@ -78,18 +79,39 @@ class _RtInformationState extends State<RtInformation> with TickerProviderStateM
     }
 
     try {
-      // 일단 초기화만 하고, 나중에 좋아요 상태 확인 API가 준비되면 추가
-      setState(() {
-        isInitialized = true;
-      });
+      // RestaurantService를 사용하여 좋아요 상태 확인
+      final result = await _restaurantService.getLikeStatus(widget.restaurant!.id);
+
+      print('좋아요 상태 확인 결과: $result');
+
+      if (mounted) {
+        setState(() {
+          if (result['success'] == true) {
+            liked = result['isLiked'] ?? false;
+            currentLikes = result['likes'] ?? widget.likes;
+          } else {
+            liked = false;
+            currentLikes = widget.likes;
+          }
+          isInitialized = true;
+        });
+      }
     } catch (e) {
       print('좋아요 상태 확인 오류: $e');
       if (mounted) {
         setState(() {
+          liked = false;
+          currentLikes = widget.likes;
           isInitialized = true;
         });
       }
     }
+  }
+
+// 세션 쿠키를 가져오는 헬퍼 함수 추가 (아직 없다면)
+  Future<String> _getCookie() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('session_cookie') ?? '';
   }
 
   // 좋아요 토글 함수 (RestaurantService 사용)

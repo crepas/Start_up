@@ -1,12 +1,26 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:start_up/screens/ListScreen.dart';
 import 'package:start_up/screens/MainScreen.dart';
+import 'package:start_up/screens/MenuTab.dart';
 import 'screens/splash.dart';
 import 'screens/login.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+// import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../screens/visit_history_screen.dart';
+import '../screens/review_management.dart';
+import '../screens/app_settings.dart';
+import '../screens/EditProfileScreen.dart';
+import '../screens/ListScreen.dart';
+import '../widgets/Rt_ReviewList.dart';
+import '../screens/favorites_Screen.dart';
+import '../screens/signup.dart';
+import '../widgets/ReviewInputWidget.dart';
+import '../widgets/Filter.dart';
 import 'theme/light_theme.dart';
 import 'theme/dark_theme.dart';
 // 로그인 상태 체크를 위한 클래스
@@ -108,7 +122,7 @@ class MyAppState extends State<MyApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: _themeMode,
-      home: LoginScreen(),
+      home: ListScreen(),
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),

@@ -1,15 +1,11 @@
-/// MapTab.dart
-/// 지도 화면을 구현한 탭
-/// 
+/// MapTab.dart - 필터링 기능이 추가된 지도 화면
+///
 /// 주요 기능:
-/// - 카카오맵 표시
-/// - 현재 위치 표시
-/// - 주변 음식점 마커 표시
-/// - 음식점 클러스터링
-/// - 마커 클릭 시 상세 정보 표시
-/// - 지도 줌 레벨 조정
-/// - 위치 기반 음식점 검색
-/// - 뒤로가기 버튼으로 포커스 리셋
+/// - 카테고리별 음식점 필터링
+/// - 음식점 타입별 다른 마커 표시
+/// - 실시간 필터 적용
+/// - 가격대별 필터링
+/// - 영업시간 필터링
 
 import 'dart:async';
 import 'dart:developer';
@@ -22,12 +18,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/restaurant.dart';
 import '../utils/api_config.dart';
-import 'package:permission_handler/permission_handler.dart'; // 추가된 패키지
-
+import 'package:permission_handler/permission_handler.dart';
 
 class MapTab extends StatefulWidget {
   final Restaurant? selectedRestaurant;
-  final bool resetToMyLocation; // 내 위치로 리셋할지 여부
+  final bool resetToMyLocation;
 
   const MapTab({
     Key? key,
@@ -44,20 +39,42 @@ class _MapTabState extends State<MapTab> {
   NaverMapController? _mapController;
   bool _isLoading = true;
   bool _isLoadingRestaurants = false;
-  double _currentZoom = 14.0; // 현재 줌 레벨 추적
-  bool _isFocusedOnRestaurant = false; // 특정 음식점에 포커스되어 있는지 여부
-  Restaurant? _focusedRestaurant; // 현재 포커스된 음식점
+  double _currentZoom = 14.0;
+  bool _isFocusedOnRestaurant = false;
+  Restaurant? _focusedRestaurant;
 
-  // 인하대 후문 정확한 좌표 (인천 미추홀구 용현동)
+  // 인하대 후문 정확한 좌표
   final double inhaBackGateLat = 37.45169;
   final double inhaBackGateLng = 126.65464;
 
-  // 데이터베이스에서 받아온 음식점 데이터를 저장할 리스트
-  List<Map<String, dynamic>> _restaurants = [];
+  // 모든 음식점 데이터
+  List<Map<String, dynamic>> _allRestaurants = [];
+  // 필터링된 음식점 데이터
+  List<Map<String, dynamic>> _filteredRestaurants = [];
 
   // 내 위치
   double? _myLat;
   double? _myLng;
+
+  // 필터 상태
+  Set<String> _selectedCategories = {};
+  bool _showFilterPanel = false;
+
+  // 카테고리별 색상 매핑
+  final Map<String, Color> _categoryColors = {
+    '한식': Colors.red,
+    '중식': Colors.orange,
+    '일식': Colors.blue,
+    '양식': Colors.green,
+    '카페': Colors.brown,
+    '기타': Colors.grey,
+  };
+
+  // 가능한 필터 옵션들
+  final List<String> _availableCategories = [
+    '한식', '중식', '일식', '양식', '카페'
+  ];
+
 
   @override
   void initState() {
@@ -71,14 +88,13 @@ class _MapTabState extends State<MapTab> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getCurrentLocation(); // 내 위치 먼저 가져오기
+      _getCurrentLocation();
       _fetchRestaurantsFromDatabase();
     });
   }
 
-  // 현재 위치 가져오기 (인하대 후문으로 고정)
+  // 현재 위치 가져오기
   Future<void> _getCurrentLocation() async {
-    // 인하대 후문 좌표로 고정
     setState(() {
       _myLat = inhaBackGateLat;
       _myLng = inhaBackGateLng;
@@ -86,48 +102,26 @@ class _MapTabState extends State<MapTab> {
 
     print('내 위치 설정 (인하대 후문): $_myLat, $_myLng');
 
-    // 내 위치 마커 추가
     if (_mapController != null) {
       await _addMyLocationMarker();
     }
   }
 
-  // 포커스 리셋 함수 - 내 위치로 돌아가기
+  // 포커스 리셋 함수
   void _resetFocus() {
     setState(() {
       _isFocusedOnRestaurant = false;
       _focusedRestaurant = null;
     });
 
-    // 내 위치로 지도 이동
     _moveToMyLocation();
 
-    // 선택된 음식점 마커 제거 후 일반 마커로 다시 추가
     if (_mapController != null && widget.selectedRestaurant != null) {
       _removeSelectedRestaurantMarker();
     }
   }
 
-  // 선택된 음식점 마커 제거
-  Future<void> _removeSelectedRestaurantMarker() async {
-    if (_mapController == null || widget.selectedRestaurant == null) return;
-
-    try {
-      // 선택된 음식점 마커 제거
-      await _mapController!.clearOverlays(type: NOverlayType.marker);
-
-      // 모든 마커 다시 추가
-      await _addRestaurantMarkers();
-
-      // 내 위치 마커도 다시 추가
-      if (_myLat != null && _myLng != null) {
-        await _addMyLocationMarker();
-      }
-    } catch (e) {
-      print('선택된 음식점 마커 제거 실패: $e');
-    }
-  }
-
+  // 데이터베이스에서 음식점 데이터 가져오기
   Future<void> _fetchRestaurantsFromDatabase() async {
     if (_isLoadingRestaurants) return;
 
@@ -143,16 +137,14 @@ class _MapTabState extends State<MapTab> {
       final queryParams = {
         'lat': inhaBackGateLat.toString(),
         'lng': inhaBackGateLng.toString(),
-        'radius': '2000', // 2km 반경
-        'limit': '50',
+        'radius': '2000',
+        'limit': '120',
         'sort': 'distance',
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
         queryParameters: queryParams,
       );
-
-      print('지도 API 호출 URL: $uri');
 
       final response = await http.get(
         uri,
@@ -162,32 +154,24 @@ class _MapTabState extends State<MapTab> {
         },
       );
 
-      print('지도 API 응답 상태: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         if (data['restaurants'] != null) {
           setState(() {
-            _restaurants = List<Map<String, dynamic>>.from(data['restaurants']);
+            _allRestaurants = List<Map<String, dynamic>>.from(data['restaurants']);
+            _filteredRestaurants = List.from(_allRestaurants);
             _isLoadingRestaurants = false;
           });
 
-          print('지도에서 로드된 음식점 수: ${_restaurants.length}개');
+          print('지도에서 로드된 음식점 수: ${_allRestaurants.length}개');
 
-          // 지도가 이미 준비된 상태라면 마커 추가
           if (_mapController != null) {
-            print('지도 컨트롤러가 준비되어 있음 - 마커 추가 시작');
-            await _addRestaurantMarkers();
-            // 내 위치 마커도 추가
+            await _updateMapMarkers();
             if (_myLat != null && _myLng != null) {
               await _addMyLocationMarker();
             }
-          } else {
-            print('지도 컨트롤러가 아직 준비되지 않음');
           }
-        } else {
-          throw Exception('No restaurants data in response');
         }
       } else {
         throw Exception('Failed to load restaurants: ${response.statusCode}');
@@ -201,31 +185,85 @@ class _MapTabState extends State<MapTab> {
     }
   }
 
+  // 필터 적용
+  void _applyFilters() {
+    setState(() {
+      _filteredRestaurants = _allRestaurants.where((restaurant) {
+        // 카테고리 필터
+        if (_selectedCategories.isNotEmpty) {
+          bool categoryMatch = false;
+          for (String category in _selectedCategories) {
+            if (_getCategoryFromRestaurant(restaurant).toLowerCase().contains(category.toLowerCase())) {
+              categoryMatch = true;
+              break;
+            }
+          }
+          if (!categoryMatch) return false;
+        }
+        return true;
+      }).toList();
+    });
+
+    // 지도 마커 업데이트
+    if (_mapController != null) {
+      _updateMapMarkers();
+    }
+
+    print('🎯 필터 적용 결과: ${_filteredRestaurants.length}개 음식점');
+  }
+
+  // 음식점에서 카테고리 추출
+  String _getCategoryFromRestaurant(Map<String, dynamic> restaurant) {
+    String categoryName = restaurant['categoryName'] ?? '';
+    List<dynamic> foodTypes = restaurant['foodTypes'] ?? [];
+
+    // foodTypes에서 우선적으로 카테고리 찾기
+    for (String foodType in foodTypes) {
+      for (String category in _availableCategories) {
+        if (foodType.toLowerCase().contains(category.toLowerCase())) {
+          return category;
+        }
+      }
+    }
+
+    // categoryName에서 카테고리 찾기
+    for (String category in _availableCategories) {
+      if (categoryName.toLowerCase().contains(category.toLowerCase())) {
+        return category;
+      }
+    }
+
+    return '기타';
+  }
+
+  // 카테고리별 마커 색상 가져오기
+  Color _getMarkerColor(Map<String, dynamic> restaurant) {
+    String category = _getCategoryFromRestaurant(restaurant);
+    return _categoryColors[category] ?? Colors.grey;
+  }
+
   // 내 위치 마커 추가
   Future<void> _addMyLocationMarker() async {
     if (_mapController == null || _myLat == null || _myLng == null) return;
 
     try {
-      // 내 위치를 초록색 원으로 표시
       final myLocationCircle = NCircleOverlay(
         id: 'my_location_circle',
         center: NLatLng(_myLat!, _myLng!),
-        radius: 4, // 반지름 4미터
+        radius: 4,
         color: Colors.green.withOpacity(0.3),
         outlineColor: Colors.green,
         outlineWidth: 2,
       );
 
-      // 원형 오버레이 추가
       await _mapController!.addOverlay(myLocationCircle);
-
       print('내 위치 원형 표시 완료: $_myLat, $_myLng');
     } catch (e) {
       print('내 위치 원형 표시 실패: $e');
     }
   }
 
-  // 데이터베이스에서 음식점 데이터 가져오기
+  // 좌표 파싱 함수
   double _parseCoordinate(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -236,72 +274,100 @@ class _MapTabState extends State<MapTab> {
     return 0.0;
   }
 
-  // 좌표 안전하게 파싱하는 함수
-  Future<void> _addRestaurantMarkers() async {
+  // 지도 마커 업데이트
+  Future<void> _updateMapMarkers() async {
     if (_mapController == null) {
-      print('지도 컨트롤러가 없습니다');
+      print('❌ 지도 컨트롤러가 null입니다');
       return;
     }
 
-    if (_restaurants.isEmpty) {
-      print('음식점 데이터가 없습니다');
-      return;
-    }
+    try {
+      print('🔄 마커 업데이트 시작: ${_filteredRestaurants.length}개');
 
-    print('마커 추가 시작: ${_restaurants.length}개');
+      // 기존 마커 제거 (내 위치 마커 제외)
+      await _mapController!.clearOverlays(type: NOverlayType.marker);
+      print('✅ 기존 마커 제거 완료');
 
-    for (int i = 0; i < _restaurants.length; i++) {
-      final restaurant = _restaurants[i];
+      // 필터링된 음식점 마커 추가
+      int successCount = 0;
+      for (int i = 0; i < _filteredRestaurants.length; i++) {
+        final restaurant = _filteredRestaurants[i];
 
-      try {
-        // 좌표 추출
-        double lat = 0.0;
-        double lng = 0.0;
+        try {
+          double lat = 0.0;
+          double lng = 0.0;
 
-        // MongoDB location.coordinates 형식 또는 lat/lng 형식
-        if (restaurant['location'] != null &&
-            restaurant['location']['coordinates'] != null) {
-          final coords = restaurant['location']['coordinates'] as List;
-          if (coords.length >= 2) {
-            lng = _parseCoordinate(coords[0]); // 경도가 먼저
-            lat = _parseCoordinate(coords[1]); // 위도가 나중
+          if (restaurant['location'] != null &&
+              restaurant['location']['coordinates'] != null) {
+            final coords = restaurant['location']['coordinates'] as List;
+            if (coords.length >= 2) {
+              lng = _parseCoordinate(coords[0]);
+              lat = _parseCoordinate(coords[1]);
+            }
+          } else if (restaurant['lat'] != null && restaurant['lng'] != null) {
+            lat = _parseCoordinate(restaurant['lat']);
+            lng = _parseCoordinate(restaurant['lng']);
           }
-        } else if (restaurant['lat'] != null && restaurant['lng'] != null) {
-          lat = _parseCoordinate(restaurant['lat']);
-          lng = _parseCoordinate(restaurant['lng']);
+
+          if (lat == 0.0 && lng == 0.0) {
+            print('⚠️ 유효하지 않은 좌표 스킵: ${restaurant['name']} - lat: $lat, lng: $lng');
+            continue;
+          }
+
+          // 기본 마커 생성 (커스텀 아이콘 없이)
+          String category = _getCategoryFromRestaurant(restaurant);
+          String markerId = 'restaurant_${restaurant['_id'] ?? restaurant['id']}_$i';
+
+          final marker = NMarker(
+            id: markerId,
+            position: NLatLng(lat, lng),
+            // 기본 마커 사용 (아이콘 설정 제거)
+          );
+
+          await _mapController!.addOverlay(marker);
+          successCount++;
+
+          print('✅ 마커 추가 성공: ${restaurant['name']} ($lat, $lng) - 카테고리: $category');
+
+          // 클릭 이벤트 설정
+          marker.setOnTapListener((overlay) {
+            print('📍 마커 클릭됨: ${restaurant['name']}');
+            _showRestaurantInfo(restaurant);
+          });
+
+        } catch (e) {
+          print('❌ 마커 추가 실패 (${restaurant['name']}): $e');
         }
-
-        // 좌표가 유효하지 않으면 스킵
-        if (lat == 0.0 && lng == 0.0) {
-          print('유효하지 않은 좌표 스킵: ${restaurant['name']} - lat: $lat, lng: $lng');
-          continue;
-        }
-
-        print('마커 추가 중: ${restaurant['name']} ($lat, $lng)');
-
-        // 마커 생성 (기본 마커 사용)
-        final marker = NMarker(
-          id: 'restaurant_${restaurant['_id'] ?? restaurant['id']}_$i',
-          position: NLatLng(lat, lng),
-        );
-
-        // 마커 추가
-        await _mapController!.addOverlay(marker);
-        print('마커 추가 성공: ${restaurant['name']}');
-
-        // 클릭 이벤트 설정
-        marker.setOnTapListener((overlay) {
-          print('마커 클릭됨: ${restaurant['name']}');
-          _showRestaurantInfo(restaurant);
-        });
-
-      } catch (e) {
-        print('마커 추가 실패 (${restaurant['name']}): $e');
-        print('마커 추가 실패 상세 오류: ${e.toString()}');
       }
-    }
 
-    print('마커 추가 완료 - 총 ${_restaurants.length}개 처리됨');
+      print('🎯 마커 업데이트 완료 - 성공: $successCount/${_filteredRestaurants.length}');
+
+      // 내 위치 마커 다시 추가
+      if (_myLat != null && _myLng != null) {
+        await _addMyLocationMarker();
+      }
+
+    } catch (e) {
+      print('❌ 마커 업데이트 중 치명적 오류: $e');
+    }
+  }
+
+  // 카테고리별 마커 아이콘 생성
+  Future<NOverlayImage?> _createCategoryMarkerIcon(String category, Color color) async {
+    // 기본 네이버 지도 마커 사용
+    return null; // 기본 마커 사용
+  }
+
+  // 선택된 음식점 마커 제거
+  Future<void> _removeSelectedRestaurantMarker() async {
+    if (_mapController == null || widget.selectedRestaurant == null) return;
+
+    try {
+      await _mapController!.clearOverlays(type: NOverlayType.marker);
+      await _updateMapMarkers();
+    } catch (e) {
+      print('선택된 음식점 마커 제거 실패: $e');
+    }
   }
 
   // 선택된 음식점 마커 추가
@@ -311,26 +377,19 @@ class _MapTabState extends State<MapTab> {
     try {
       final restaurant = widget.selectedRestaurant!;
 
-      print('선택된 음식점 마커 추가: ${restaurant.name} (${restaurant.lat}, ${restaurant.lng})');
-
-      // 선택된 음식점 마커 생성 (기본 마커에 다른 색상)
       final selectedMarker = NMarker(
         id: 'selected_restaurant_${restaurant.id}',
         position: NLatLng(restaurant.lat, restaurant.lng),
       );
 
-      // 마커 추가
       await _mapController!.addOverlay(selectedMarker);
-      print('선택된 음식점 마커 추가 성공');
 
-      // 정보창 추가 (선택된 음식점은 정보창 표시)
       final infoWindow = NInfoWindow.onMarker(
         id: "selected_info_${restaurant.id}",
         text: "📍 ${restaurant.name}",
       );
       selectedMarker.openInfoWindow(infoWindow);
 
-      // 클릭 이벤트
       selectedMarker.setOnTapListener((overlay) {
         _showRestaurantInfo({
           'name': restaurant.name,
@@ -341,7 +400,6 @@ class _MapTabState extends State<MapTab> {
         });
       });
 
-      print('선택된 음식점 마커 설정 완료: ${restaurant.name}');
     } catch (e) {
       print('선택된 음식점 마커 추가 실패: $e');
     }
@@ -357,7 +415,6 @@ class _MapTabState extends State<MapTab> {
         ),
       );
     } else {
-      // 내 위치가 없으면 인하대 후문으로
       _moveToInhaBackGate();
     }
   }
@@ -373,6 +430,8 @@ class _MapTabState extends State<MapTab> {
       );
     }
   }
+
+  // 지도 확대
   void _zoomIn() async {
     if (_mapController != null) {
       try {
@@ -431,6 +490,9 @@ class _MapTabState extends State<MapTab> {
 
   // 음식점 정보 모달 표시
   void _showRestaurantInfo(Map<String, dynamic> restaurant) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -451,12 +513,32 @@ class _MapTabState extends State<MapTab> {
                 ),
               ),
               SizedBox(height: 8),
-              Text(
-                restaurant['categoryName']?.toString() ?? '음식점',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getMarkerColor(restaurant).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _getCategoryFromRestaurant(restaurant),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _getMarkerColor(restaurant),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    restaurant['categoryName']?.toString() ?? '음식점',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 4),
               Text(
@@ -543,6 +625,135 @@ class _MapTabState extends State<MapTab> {
     );
   }
 
+  // 필터 패널 빌드
+  Widget _buildFilterPanel() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      height: _showFilterPanel ? 220 : 60,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // 필터 버튼들
+          Container(
+            height: 60,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  icon: Icon(Icons.restaurant),
+                  label: Text('음식점 (${_filteredRestaurants.length})'),
+                  onPressed: () {
+                    setState(() {
+                      _showFilterPanel = !_showFilterPanel;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+                OutlinedButton.icon(
+                  icon: Icon(Icons.filter_list),
+                  label: Text('필터'),
+                  onPressed: () {
+                    setState(() {
+                      _showFilterPanel = !_showFilterPanel;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: (_selectedCategories.isNotEmpty)
+                        ? colorScheme.primary.withOpacity(0.1)
+                        : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                Spacer(),
+                if (_selectedCategories.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategories.clear();
+                      });
+                      _applyFilters();
+                    },
+                    child: Text('초기화'),
+                  ),
+              ],
+            ),
+          ),
+
+          // 확장된 필터 옵션들
+          if (_showFilterPanel)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 카테고리 필터
+                    Text(
+                      '음식 카테고리',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _availableCategories.map((category) {
+                        final isSelected = _selectedCategories.contains(category);
+                        final color = _categoryColors[category] ?? Colors.grey;
+
+                        return FilterChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedCategories.add(category);
+                              } else {
+                                _selectedCategories.remove(category);
+                              }
+                            });
+                            _applyFilters();
+                          },
+                          backgroundColor: theme.cardColor,
+                          selectedColor: color.withOpacity(0.2),
+                          checkmarkColor: color,
+                          labelStyle: TextStyle(
+                            color: isSelected ? color : theme.textTheme.bodyMedium?.color,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -554,7 +765,7 @@ class _MapTabState extends State<MapTab> {
               : NaverMap(
             options: NaverMapViewOptions(
               initialCameraPosition: NCameraPosition(
-                target: NLatLng(inhaBackGateLat, inhaBackGateLng), // 인하대 후문 중심
+                target: NLatLng(inhaBackGateLat, inhaBackGateLng),
                 zoom: 15,
               ),
               indoorEnable: true,
@@ -570,12 +781,9 @@ class _MapTabState extends State<MapTab> {
               _mapController = controller;
               _mapControllerCompleter.complete(controller);
 
-              print('지도 준비 완료');
+              print('🗺️ 지도 준비 완료');
 
-              // 카메라 초기 위치 설정 로직
               if (widget.selectedRestaurant != null && !widget.resetToMyLocation) {
-                // 선택된 음식점으로 이동 (리스트에서 온 경우)
-                print('선택된 음식점으로 이동: ${widget.selectedRestaurant!.name}');
                 await _mapController!.updateCamera(
                   NCameraUpdate.withParams(
                     target: NLatLng(
@@ -587,9 +795,8 @@ class _MapTabState extends State<MapTab> {
                 );
                 await _addSelectedRestaurantMarker();
               } else {
-                // 내 위치로 이동 (홈에서 온 경우 또는 일반적인 경우)
                 if (_myLat != null && _myLng != null) {
-                  print('내 위치로 이동: $_myLat, $_myLng');
+                  print('📍 내 위치로 카메라 이동: $_myLat, $_myLng');
                   await _mapController!.updateCamera(
                     NCameraUpdate.withParams(
                       target: NLatLng(_myLat!, _myLng!),
@@ -597,7 +804,7 @@ class _MapTabState extends State<MapTab> {
                     ),
                   );
                 } else {
-                  print('내 위치가 없어서 인하대 후문으로 이동');
+                  print('🏢 인하대 후문으로 카메라 이동');
                   await _mapController!.updateCamera(
                     NCameraUpdate.withParams(
                       target: NLatLng(inhaBackGateLat, inhaBackGateLng),
@@ -608,11 +815,11 @@ class _MapTabState extends State<MapTab> {
               }
 
               // 마커들 추가
-              print('일반 음식점 마커 추가 시작 - 데이터 개수: ${_restaurants.length}');
-              if (_restaurants.isNotEmpty) {
-                await _addRestaurantMarkers();
+              print('📍 마커 추가 시작 - 전체 데이터: ${_allRestaurants.length}개');
+              if (_allRestaurants.isNotEmpty) {
+                await _updateMapMarkers();
               } else {
-                print('음식점 데이터가 아직 로드되지 않음');
+                print('⚠️ 음식점 데이터가 아직 로드되지 않음 - 마커 추가 건너뜀');
               }
 
               // 내 위치 마커 추가
@@ -620,7 +827,7 @@ class _MapTabState extends State<MapTab> {
                 await _addMyLocationMarker();
               }
 
-              log("지도가 준비되었습니다", name: "MapTab");
+              log("✅ 지도 초기화 완료", name: "MapTab");
             },
           ),
 
@@ -673,7 +880,7 @@ class _MapTabState extends State<MapTab> {
           // 내 위치 버튼
           Positioned(
             right: 16,
-            bottom: 180,
+            bottom: _showFilterPanel ? 240 : 180,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: Icon(Icons.my_location,
@@ -687,7 +894,7 @@ class _MapTabState extends State<MapTab> {
           // 확대 버튼
           Positioned(
             right: 16,
-            bottom: 240,
+            bottom: _showFilterPanel ? 300 : 240,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: Icon(Icons.add,
@@ -703,7 +910,7 @@ class _MapTabState extends State<MapTab> {
           // 축소 버튼
           Positioned(
             right: 16,
-            bottom: 120,
+            bottom: _showFilterPanel ? 360 : 280,
             child: FloatingActionButton(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: Icon(Icons.remove,
@@ -721,66 +928,74 @@ class _MapTabState extends State<MapTab> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
-              height: 60,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).shadowColor.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                    offset: Offset(0, -3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  OutlinedButton.icon(
-                    icon: Icon(Icons.restaurant),
-                    label: Text('음식점'),
-                    onPressed: () {
-                      // 음식점만 필터링하는 기능 추가 가능
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('음식점 필터는 준비 중입니다.')),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+            child: _buildFilterPanel(),
+          ),
+
+          // 범례 (카테고리별 색상 안내)
+          if (_showFilterPanel)
+            Positioned(
+              top: 80,
+              right: 16,
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '카테고리 범례',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: Icon(Icons.local_cafe),
-                    label: Text('카페'),
-                    onPressed: () {
-                      // 카페만 필터링하는 기능 추가 가능
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('카페 필터는 준비 중입니다.')),
+                    SizedBox(height: 8),
+                    ...(_selectedCategories.isEmpty
+                        ? _availableCategories.take(5)
+                        : _selectedCategories).map((category) {
+                      final color = _categoryColors[category] ?? Colors.grey;
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              category,
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
                       );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                    }).toList(),
+                    if (_selectedCategories.isEmpty && _availableCategories.length > 5)
+                      Text(
+                        '...',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
                       ),
-                    ),
-                  ),
-                  Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('검색 기능은 준비 중입니다.')),
-                      );
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
           // 로딩 표시
           if (_isLoadingRestaurants)

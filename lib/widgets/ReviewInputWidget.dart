@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
 /// 리뷰 입력 위젯
-/// 
+///
 /// 사용자가 리뷰를 작성하고 이미지를 첨부할 수 있는 위젯입니다.
 /// 최대 5개의 이미지를 첨부할 수 있으며, 텍스트와 이미지를 함께 입력할 수 있습니다.
 class ReviewInputWidget extends StatefulWidget {
@@ -20,15 +20,15 @@ class ReviewInputWidget extends StatefulWidget {
 class _ReviewInputWidgetState extends State<ReviewInputWidget> {
   /// 리뷰 텍스트 입력을 위한 컨트롤러
   final TextEditingController _reviewController = TextEditingController();
-  
+
   /// 선택된 이미지 파일 목록
   List<File> _selectedImages = [];
-  
+
   /// 작성된 리뷰 목록
   List<Map<String, dynamic>> _reviewList = [];
 
   /// 이미지 선택 메서드
-  /// 
+  ///
   /// 갤러리에서 최대 5개의 이미지를 선택할 수 있습니다.
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -49,7 +49,7 @@ class _ReviewInputWidgetState extends State<ReviewInputWidget> {
   }
 
   /// 리뷰 제출 메서드
-  /// 
+  ///
   /// 텍스트나 이미지가 하나 이상 있어야 제출 가능합니다.
   void _submitReview() {
     if (_reviewController.text.trim().isEmpty && _selectedImages.isEmpty) return;
