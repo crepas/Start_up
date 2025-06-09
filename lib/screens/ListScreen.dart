@@ -137,7 +137,9 @@ class _ListScreenState extends State<ListScreen> {
           rating: 4.0 + (searchResult['id'].hashCode % 10) / 10, // 임시 평점
           likes: _parseInt(searchResult['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
           reviews: [],
-          images: [_getCategoryImage(searchResult['category_name'] ?? '')],
+          images: searchResult['images'] != null && (searchResult['images'] as List).isNotEmpty
+              ? List<String>.from(searchResult['images'])
+              : [_getCategoryImage(searchResult['category_name'] ?? '')],
           createdAt: DateTime.now(),
           reviewCount: searchResult['id'].hashCode % 50,
           isOpen: true,
@@ -580,19 +582,39 @@ class _ListScreenState extends State<ListScreen> {
   // 검색 결과 처리
   void _handleSearchResults(List<Restaurant> results) {
     setState(() {
-      restaurants = results;
-      filteredRestaurants = List.from(restaurants);
+      _isSearchMode = true;
+      _currentFilters.clear(); // 모든 필터 초기화
+
+      // 검색 결과를 바로 filteredRestaurants에 설정
+      filteredRestaurants = List.from(results);
     });
+
+    print('검색 결과 적용: ${results.length}개의 음식점');
+    print('필터 초기화됨: $_currentFilters');
   }
 
   // 검색 모드 변경
   void _handleSearchModeChanged(bool isSearchMode) {
     setState(() {
       _isSearchMode = isSearchMode;
+
       if (!isSearchMode) {
-        _loadRestaurants();
+        // 검색 모드가 꺼질 때 모든 필터 해제하고 전체 음식점 표시
+        _currentFilters.clear();
+
+        // restaurants가 비어있지 않으면 전체 음식점 표시
+        if (restaurants.isNotEmpty) {
+          filteredRestaurants = List.from(restaurants);
+        } else {
+          // restaurants가 비어있으면 다시 로드
+          _loadRestaurants();
+        }
       }
     });
+
+    print('검색 모드 변경: $isSearchMode');
+    print('필터 완전 초기화: $_currentFilters');
+    print('전체 음식점 표시: ${filteredRestaurants.length}개');
   }
 
   // 네비게이션 처리 함수
