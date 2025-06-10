@@ -12,6 +12,7 @@ class FindPasswordScreen extends StatefulWidget {
 }
 
 class _FindPasswordScreenState extends State<FindPasswordScreen> {
+
   final TextEditingController emailController = TextEditingController();
   bool isLoading = false;
 
