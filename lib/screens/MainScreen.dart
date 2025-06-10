@@ -807,8 +807,6 @@ class _MainScreenState extends State<MainScreen> {
                   // 평점과 좋아요
                   Row(
                     children: [
-                      Icon(Icons.star, color: colorScheme.primary, size: 16),
-                      SizedBox(width: 2),
                       Icon(Icons.favorite, color: Colors.red, size: 16),
                       SizedBox(width: 2),
                       Text(

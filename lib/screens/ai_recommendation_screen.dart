@@ -223,13 +223,6 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(width: 16),
-                Icon(Icons.star, size: 16, color: Colors.amber),
-                const SizedBox(width: 4),
-                Text(
-                  '${restaurant['rating'] ?? '0.0'}',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: 16),
                 Icon(Icons.favorite, size: 16, color: Colors.red),
                 const SizedBox(width: 4),
                 Text(
