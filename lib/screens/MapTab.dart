@@ -562,13 +562,6 @@ class _MapTabState extends State<MapTab> {
               SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.star, color: Colors.amber, size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    (restaurant['rating']?.toString() ?? '0.0'),
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 16),
                   Icon(Icons.favorite, color: Colors.red, size: 16),
                   SizedBox(width: 4),
                   Text(
@@ -580,10 +573,7 @@ class _MapTabState extends State<MapTab> {
               SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildActionButton(Icons.favorite_border, '찜하기'),
-                  _buildActionButton(Icons.share, '공유하기'),
-                ],
+
               ),
               SizedBox(height: 16),
               OutlinedButton(
