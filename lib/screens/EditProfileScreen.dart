@@ -16,7 +16,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _usernameController;
   List<String> _selectedFoodTypes = [];
-  String _selectedPriceRange = '중간';
   bool _isLoading = false;
 
   // 가능한 음식 종류 목록
@@ -24,9 +23,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     '한식', '중식', '일식', '양식', '분식',
     '고기', '해산물', '채식', '면류', '디저트'
   ];
-
-  // 가격대 옵션
-  final List<String> _priceRanges = ['저렴', '중간', '고가'];
 
   @override
   void initState() {
@@ -37,12 +33,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (widget.userInfo['preferences'] != null &&
         widget.userInfo['preferences']['foodTypes'] != null) {
       _selectedFoodTypes = List<String>.from(widget.userInfo['preferences']['foodTypes']);
-    }
-
-    // 기존 선호 가격대 설정
-    if (widget.userInfo['preferences'] != null &&
-        widget.userInfo['preferences']['priceRange'] != null) {
-      _selectedPriceRange = widget.userInfo['preferences']['priceRange'];
     }
   }
 
@@ -72,7 +62,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'username': _usernameController.text.trim(),
         'preferences': {
           'foodTypes': _selectedFoodTypes,
-          'priceRange': _selectedPriceRange
         }
       };
 
@@ -144,7 +133,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // 로컬 저장소 업데이트
     await prefs.setString('username', _usernameController.text.trim());
     await prefs.setStringList('foodTypes', _selectedFoodTypes);
-    await prefs.setString('priceRange', _selectedPriceRange);
 
     // 성공 메시지 표시
     ScaffoldMessenger.of(context).showSnackBar(
@@ -265,69 +253,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   SizedBox(height: 24),
-                  // 선호 음식 종류
+                  // 선호 음식 종류 (개선된 UI)
                   Text(
                     '선호하는 음식 종류',
                     style: theme.textTheme.titleMedium,
                   ),
                   SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _availableFoodTypes.map((type) {
-                      final isSelected = _selectedFoodTypes.contains(type);
-                      return FilterChip(
-                        label: Text(type),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              _selectedFoodTypes.add(type);
-                            } else {
-                              _selectedFoodTypes.remove(type);
-                            }
-                          });
-                        },
-                        backgroundColor: theme.cardColor,
-                        selectedColor: colorScheme.primary.withOpacity(0.2),
-                        checkmarkColor: colorScheme.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? colorScheme.primary : theme.textTheme.bodyMedium?.color,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 24),
-                  // 선호 가격대
-                  Text(
-                    '선호하는 가격대',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _priceRanges.map((range) {
-                      final isSelected = _selectedPriceRange == range;
-                      return ChoiceChip(
-                        label: Text(range),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.dividerColor),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _availableFoodTypes.map((type) {
+                        final isSelected = _selectedFoodTypes.contains(type);
+                        return FilterChip(
+                          label: Text(
+                            type,
+                            style: TextStyle(
+                              color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          selected: isSelected,
+                          onSelected: (selected) {
                             setState(() {
-                              _selectedPriceRange = range;
+                              if (selected) {
+                                _selectedFoodTypes.add(type);
+                              } else {
+                                _selectedFoodTypes.remove(type);
+                              }
                             });
-                          }
-                        },
-                        backgroundColor: theme.cardColor,
-                        selectedColor: colorScheme.primary.withOpacity(0.2),
-                        labelStyle: TextStyle(
-                          color: isSelected ? colorScheme.primary : theme.textTheme.bodyMedium?.color,
-                        ),
-                      );
-                    }).toList(),
+                            print('현재 선택된 음식 타입: $_selectedFoodTypes');
+                          },
+                          backgroundColor: theme.cardColor,
+                          selectedColor: colorScheme.primary,
+                          checkmarkColor: colorScheme.onPrimary,
+                          side: BorderSide(
+                            color: isSelected ? colorScheme.primary : theme.dividerColor,
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
+
+                  // 선택된 개수 표시
+                  if (_selectedFoodTypes.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${_selectedFoodTypes.length}개 선택됨',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+
                   SizedBox(height: 32),
+
                   // 저장 버튼
                   SizedBox(
                     width: double.infinity,
@@ -351,7 +338,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ],
               ),
-            ),
+      ),
     );
   }
 }

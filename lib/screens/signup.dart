@@ -26,6 +26,9 @@ class _SignupScreenState extends State<SignupScreen> {
   // 로딩 상태
   bool _isLoading = false;
 
+  Set<String> _selectedFoodTypes = {};
+  final List<String> _availableFoodTypes = ['한식', '중식', '일식', '양식', '카페', '분식', '치킨', '피자', '디저트'];
+
   @override
   void dispose() {
     // 컨트롤러 해제
@@ -128,6 +131,9 @@ class _SignupScreenState extends State<SignupScreen> {
         'username': _usernameController.text.trim(),
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
+        'preferences': {
+          'foodTypes': _selectedFoodTypes.toList(), // 선호 음식 타입 추가
+        },
       };
 
       // POST 요청 보내기
@@ -227,6 +233,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // 입력 필드
               _buildTextFields(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.02),
+
+              // 선호 음식 선택 섹션 추가
+              _buildFoodPreferenceSection(screenWidth, screenHeight),
               SizedBox(height: screenHeight * 0.03),
 
               // 회원가입 버튼
@@ -266,6 +276,99 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // 선호 음식 선택 섹션 빌드
+  Widget _buildFoodPreferenceSection(double screenWidth, double screenHeight) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 섹션 제목
+        Padding(
+          padding: EdgeInsets.only(left: 16, bottom: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.restaurant_menu,
+                color: colorScheme.primary,
+                size: screenWidth * 0.05,
+              ),
+              SizedBox(width: 8),
+              Text(
+                '선호하는 음식 종류를 선택해주세요 (선택사항)',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.035,
+                  fontWeight: FontWeight.w500,
+                  color: theme.textTheme.titleMedium?.color,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 음식 타입 선택 칩들
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _availableFoodTypes.map((foodType) {
+              final isSelected = _selectedFoodTypes.contains(foodType);
+              return FilterChip(
+                label: Text(
+                  foodType,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.032,
+                    color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyMedium?.color,
+                  ),
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedFoodTypes.add(foodType);
+                    } else {
+                      _selectedFoodTypes.remove(foodType);
+                    }
+                  });
+                },
+                backgroundColor: theme.cardColor,
+                selectedColor: colorScheme.primary,
+                checkmarkColor: colorScheme.onPrimary,
+                side: BorderSide(
+                  color: isSelected ? colorScheme.primary : theme.dividerColor,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        // 선택된 개수 표시
+        if (_selectedFoodTypes.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(left: 16, top: 8),
+            child: Text(
+              '${_selectedFoodTypes.length}개 선택됨',
+              style: TextStyle(
+                fontSize: screenWidth * 0.03,
+                color: colorScheme.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

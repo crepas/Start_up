@@ -141,7 +141,6 @@ class _MainScreenState extends State<MainScreen> {
         'lng': inhaBackGateLng.toString(),
         'radius': '2000', // 2km 반경
         'limit': '50',
-        'sort': 'rating',
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
@@ -271,7 +270,6 @@ class _MainScreenState extends State<MainScreen> {
         'lng': inhaBackGateLng.toString(),
         'radius': '2000', // 2km 반경
         'limit': '20', // 홈 화면용으로 20개만
-        'sort': 'rating',
       };
 
       final uri = Uri.parse('$baseUrl/restaurants').replace(
@@ -807,8 +805,6 @@ class _MainScreenState extends State<MainScreen> {
                   // 평점과 좋아요
                   Row(
                     children: [
-                      Icon(Icons.star, color: colorScheme.primary, size: 16),
-                      SizedBox(width: 2),
                       Icon(Icons.favorite, color: Colors.red, size: 16),
                       SizedBox(width: 2),
                       Text(
