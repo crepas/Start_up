@@ -63,41 +63,12 @@ class _MenuTabState extends State<MenuTab> {
         },
       },
       {
-        'title': '방문 기록',
-        'icon': Icons.history,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => VisitHistoryScreen()),
-          );
-        },
-      },
-      {
-        'title': '리뷰 관리',
-        'icon': Icons.rate_review,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ReviewManagementTab()),
-          );
-        },
-      },
-      {
         'title': '앱 설정',
         'icon': Icons.settings,
         'onTap': () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AppSettingsTab()),
-          );
-        },
-      },
-      {
-        'title': '알림 설정',
-        'icon': Icons.notifications,
-        'onTap': () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('알림 설정 기능은 준비 중입니다')),
           );
         },
       },

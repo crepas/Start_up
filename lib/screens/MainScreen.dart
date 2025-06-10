@@ -343,7 +343,6 @@ class _MainScreenState extends State<MainScreen> {
         phone: item['phone'] ?? '',
         placeUrl: item['placeUrl'] ?? item['place_url'] ?? '',
         priceRange: item['priceRange'] ?? '중간',
-        rating: _parseDouble(item['rating'] ?? 0),
         likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용
         reviews: _parseReviews(item['reviews'] ?? []),
         images: _parseImages(item['images'] ?? []),
@@ -427,7 +426,6 @@ class _MainScreenState extends State<MainScreen> {
       phone: item['phone']?.toString() ?? '',
       placeUrl: item['placeUrl']?.toString() ?? '',
       priceRange: '중간',
-      rating: 4.0,
       likes: _parseInt(item['likes'] ?? 0), // 데이터베이스에서 받아온 좋아요 수 사용 (기본값 0)
       reviews: [],
       images: ['assets/restaurant.png'],
@@ -454,7 +452,6 @@ class _MainScreenState extends State<MainScreen> {
         phone: '032-867-0582',
         placeUrl: '',
         priceRange: '저렴',
-        rating: 4.1,
         likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
@@ -476,7 +473,6 @@ class _MainScreenState extends State<MainScreen> {
         phone: '032-123-4567',
         placeUrl: '',
         priceRange: '중간',
-        rating: 4.3,
         likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
@@ -498,7 +494,6 @@ class _MainScreenState extends State<MainScreen> {
         phone: '032-456-7890',
         placeUrl: '',
         priceRange: '저렴',
-        rating: 4.0,
         likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
         reviews: [],
         images: ['assets/restaurant.png'],
@@ -814,11 +809,6 @@ class _MainScreenState extends State<MainScreen> {
                     children: [
                       Icon(Icons.star, color: colorScheme.primary, size: 16),
                       SizedBox(width: 2),
-                      Text(
-                        restaurant.rating.toStringAsFixed(1),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      SizedBox(width: 8),
                       Icon(Icons.favorite, color: Colors.red, size: 16),
                       SizedBox(width: 2),
                       Text(

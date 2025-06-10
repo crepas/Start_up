@@ -328,18 +328,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     SizedBox(height: 20),
 
-                    // 소셜 로그인 버튼
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        KakaoLoginButton(
-                          onPressed: _handleKakaoLogin,
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 20),
-
                     // 회원가입 및 비밀번호 찾기 링크
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
