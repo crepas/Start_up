@@ -10,7 +10,9 @@ class RestaurantService {
   // 인증 헤더 가져오기
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('token'); // 'token' 키 사용
+
+    print('저장된 토큰: $token'); // 디버깅용
 
     return {
       'Content-Type': 'application/json',

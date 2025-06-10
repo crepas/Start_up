@@ -38,15 +38,18 @@ class AuthService with ChangeNotifier {
   Future<Map<String, dynamic>> login(String usernameOrEmail, String password) async {
     final response = await _apiService.login(usernameOrEmail, password);
 
-    if (response.containsKey('user')) {
+    if (response.containsKey('user') && response.containsKey('token')) {
       _username = response['user']['username'];
       _email = response['user']['email'];
       _isLoggedIn = true;
 
       // 자동 로그인을 위해 정보 저장
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', response['token']); // 토큰 저장 추가!
       await prefs.setString('username', _username);
       await prefs.setString('email', _email);
+
+      print('토큰 저장됨: ${response['token']}'); // 디버깅용
 
       notifyListeners();
     }
@@ -54,26 +57,25 @@ class AuthService with ChangeNotifier {
     return response;
   }
 
+
   // 카카오 로그인
   Future<Map<String, dynamic>> kakaoLogin(String accessToken) async {
     final response = await _apiService.kakaoLogin(accessToken);
 
-    if (response['message'] == '카카오 로그인 성공!') {
-      // 성공 시 프로필 정보 가져오기
-      final profileResponse = await _apiService.getProfile();
+    if (response.containsKey('token') && response.containsKey('user')) {
+      _username = response['user']['username'];
+      _email = response['user']['email'];
+      _isLoggedIn = true;
 
-      if (profileResponse.containsKey('user')) {
-        _username = profileResponse['user']['username'];
-        _email = profileResponse['user']['email'];
-        _isLoggedIn = true;
+      // 자동 로그인을 위해 정보 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', response['token']); // 토큰 저장 추가!
+      await prefs.setString('username', _username);
+      await prefs.setString('email', _email);
 
-        // 자동 로그인을 위해 정보 저장
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('username', _username);
-        await prefs.setString('email', _email);
+      print('카카오 토큰 저장됨: ${response['token']}'); // 디버깅용
 
-        notifyListeners();
-      }
+      notifyListeners();
     }
 
     return response;
@@ -89,6 +91,7 @@ class AuthService with ChangeNotifier {
 
     // 저장된 로그인 정보 삭제
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token'); // 토큰 삭제 추가!
     await prefs.remove('username');
     await prefs.remove('email');
 

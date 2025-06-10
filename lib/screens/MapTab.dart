@@ -138,7 +138,7 @@ class _MapTabState extends State<MapTab> {
         'lat': inhaBackGateLat.toString(),
         'lng': inhaBackGateLng.toString(),
         'radius': '2000',
-        'limit': '50',
+        'limit': '120',
         'sort': 'distance',
       };
 
@@ -396,7 +396,6 @@ class _MapTabState extends State<MapTab> {
           'categoryName': restaurant.categoryName,
           'address': restaurant.address,
           'phone': restaurant.phone,
-          'rating': restaurant.rating,
           'likes': restaurant.likes,
         });
       });
