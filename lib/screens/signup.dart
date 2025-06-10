@@ -244,21 +244,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     onPressed: _isLoading ? null : _signup,
                     child: _isLoading
                         ? SizedBox(
-                            width: screenWidth * 0.03,
-                            height: screenWidth * 0.03,
-                            child: CircularProgressIndicator(
-                              color: colorScheme.onPrimary,
-                              strokeWidth: 2,
-                            ),
-                          )
+                      width: screenWidth * 0.03,
+                      height: screenWidth * 0.03,
+                      child: CircularProgressIndicator(
+                        color: colorScheme.onPrimary,
+                        strokeWidth: 2,
+                      ),
+                    )
                         : Text(
-                            '회원가입',
-                            style: TextStyle(
-                              color: colorScheme.onPrimary,
-                              fontSize: screenWidth * 0.03,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                      '회원가입',
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
+                        fontSize: screenWidth * 0.03,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
               ),

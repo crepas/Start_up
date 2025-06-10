@@ -310,8 +310,6 @@ class _MainScreenState extends State<MainScreen> {
       print('홈 화면 음식점 목록 로드 오류: $e');
       setState(() {
         _isLoading = false;
-        // 오류 발생 시 더미 데이터로 초기화
-        _restaurants = _getInhaDummyRestaurants();
       });
     }
   }
@@ -437,78 +435,6 @@ class _MainScreenState extends State<MainScreen> {
       hasParking: false,
       hasDelivery: false,
     );
-  }
-
-  // 인하대 후문 주변 더미 데이터 (백업용)
-  List<Restaurant> _getInhaDummyRestaurants() {
-    return [
-      Restaurant(
-        id: '1',
-        name: '인하반점',
-        address: '인천 미추홀구 용현동 산1-1',
-        roadAddress: '인천 미추홀구 인하로 12',
-        lat: 37.4495,
-        lng: 126.7012,
-        categoryName: '음식점 > 중식 > 중화요리',
-        foodTypes: ['중식', '짜장면'],
-        phone: '032-867-0582',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.1,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 60)),
-        reviewCount: 0,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: true,
-      ),
-      Restaurant(
-        id: '2',
-        name: '후문 삼겹살',
-        address: '인천 미추홀구 용현동 618-1',
-        roadAddress: '인천 미추홀구 인하로 100',
-        lat: 37.4492,
-        lng: 126.7015,
-        categoryName: '음식점 > 한식 > 고기구이',
-        foodTypes: ['한식', '고기'],
-        phone: '032-123-4567',
-        placeUrl: '',
-        priceRange: '중간',
-        rating: 4.3,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        reviewCount: 0,
-        isOpen: true,
-        hasParking: true,
-        hasDelivery: false,
-      ),
-      Restaurant(
-        id: '3',
-        name: '후문카페',
-        address: '인천 미추홀구 용현동 253',
-        roadAddress: '인천 미추홀구 인하로 150',
-        lat: 37.4498,
-        lng: 126.7008,
-        categoryName: '음식점 > 카페 > 커피전문점',
-        foodTypes: ['카페', '커피'],
-        phone: '032-456-7890',
-        placeUrl: '',
-        priceRange: '저렴',
-        rating: 4.0,
-        likes: 0, // 데이터베이스에서 받아온 값을 사용하도록 0으로 초기화
-        reviews: [],
-        images: ['assets/restaurant.png'],
-        createdAt: DateTime.now().subtract(Duration(days: 90)),
-        reviewCount: 0,
-        isOpen: true,
-        hasParking: false,
-        hasDelivery: false,
-      ),
-    ];
   }
 
   // 카테고리별 음식점 필터링
